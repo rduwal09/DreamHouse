@@ -1,0 +1,65 @@
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.dashboard {
+  flex: 1;
+  padding: 2rem;
+  background: #f8f9fa;
+
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    button {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+
+      &:hover {
+        background: #c0392b;
+      }
+    }
+  }
+
+  .stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      flex: 1;
+      text-align: center;
+
+      h3 {
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #2c3e50;
+      }
+    }
+  }
+
+  .loading,
+  .error {
+    margin-top: 2rem;
+    font-size: 1.2rem;
+    color: #666;
+  }
+
+  .error {
+    color: #e74c3c;
+  }
+}
