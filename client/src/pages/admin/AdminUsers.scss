@@ -1,0 +1,67 @@
+.admin-users-container {
+  padding: 2rem;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+
+  h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+    text-align: center;
+  }
+
+  .user-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      font-size: 1rem;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      color: #555;
+    }
+
+    tr:hover {
+      background-color: #f1f7ff;
+    }
+
+    td {
+      color: #444;
+    }
+  }
+
+  .no-users {
+    text-align: center;
+    color: #888;
+    font-size: 1.2rem;
+    margin-top: 2rem;
+  }
+
+  /* Responsive for small screens */
+  @media (max-width: 768px) {
+    .user-table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+      border-radius: 0;
+
+      th, td {
+        padding: 0.75rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    h2 {
+      font-size: 1.5rem;
+    }
+  }
+}
