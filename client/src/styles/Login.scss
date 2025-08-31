@@ -1,113 +1,192 @@
-@import "./variables.scss";
-@import "./breakpoints.scss";
-
-.login {
-  width: 100vw;
-  height: 100vh;
+.login-page {
+  min-height: 100vh;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: url("../../public/assets/login.jpg") no-repeat center center/cover;
   position: relative;
+  background: linear-gradient(135deg, #c3a99f, #6394cc, #af93f4);
+  background-size: cover;
+}
 
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    z-index: 0;
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5); // dark transparent overlay
+  z-index: 1;
+}
+
+.login-card {
+  position: relative;
+  z-index: 2; /* keeps card above overlay */
+  background: #fff;
+  padding: 2rem 2.5rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+  h1.brand {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+
+    img {
+      width: 35px;
+      height: 35px;
+    }
   }
 
-  &_content {
-    position: relative;
-    z-index: 1;
-    width: 380px;
-    padding: 35px 30px;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(15px);
-    border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  h2 {
+    margin-bottom: 0.3rem;
+    font-size: 1.4rem;
+    color: #333;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1.5rem;
+  }
+
+  form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    color: white;
+    gap: 1rem;
 
-    @include lg {
-      width: 60%;
+    input {
+      padding: 0.75rem 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+
+      &:focus {
+        border-color: #0077cc;
+      }
     }
 
-    @include mm {
-      width: 85%;
-    }
-
-    h2 {
-      text-align: center;
-      font-size: 28px;
-      margin-bottom: 10px;
+    button {
+      padding: 0.8rem;
+      background: #0077cc;
+      color: #fff;
+      font-size: 1rem;
       font-weight: bold;
-      color: #ffffff;
-    }
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
 
-    &_form {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-
-      input {
-        padding: 12px 15px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
-        color: #fff;
-        font-size: 15px;
-        transition: all 0.3s ease;
-
-        &:focus {
-          outline: none;
-          background: rgba(255, 255, 255, 0.15);
-          border-color: rgba(255, 255, 255, 0.4);
-        }
-
-        &::placeholder {
-          color: rgba(255, 255, 255, 0.7);
-        }
+      &:hover {
+        background: #005fa3;
       }
 
-      button {
-        padding: 12px;
-        background: linear-gradient(135deg, #00b4db, #0083b0);
-        color: white;
-        font-size: 16px;
-        font-weight: 600;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-
-        &:hover {
-          background: linear-gradient(135deg, #0083b0, #00b4db);
-          box-shadow: 0 0 10px rgba(0, 179, 219, 0.6);
-        }
+      &:disabled {
+        background: #999;
+        cursor: not-allowed;
       }
     }
+  }
 
+  .error {
+    color: red;
+    font-size: 0.85rem;
+    margin-top: -0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .extras {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+
+    span,
     a {
-      font-size: 14px;
-      text-align: center;
-      color: #ffffff;
+      color: #0077cc;
+      cursor: pointer;
       text-decoration: none;
-      margin-top: 10px;
 
       &:hover {
         text-decoration: underline;
       }
     }
+  }
+}
 
-    p {
-      text-align: center;
-      font-size: 13px;
-      color: #ccc;
+/* Forgot Password Modal */
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99;
+}
+
+.modal_content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+
+  h3 {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    color: #333;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
+  button {
+    padding: 0.7rem 1rem;
+    background: #0077cc;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+
+    &:hover {
+      background: #005fa3;
     }
+  }
+
+  .close_modal {
+    margin-top: 1rem;
+    background: #ccc;
+
+    &:hover {
+      background: #aaa;
+    }
+  }
+
+  .message {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: green;
   }
 }

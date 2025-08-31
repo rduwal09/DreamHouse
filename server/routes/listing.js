@@ -2,7 +2,7 @@ const router = require("express").Router();
 const multer = require("multer");
 
 const Listing = require("../models/Listing");
-const User = require("../models/User")
+const User = require("../models/User");
 
 /* Configuration Multer for File Upload */
 const storage = multer.diskStorage({
@@ -10,7 +10,7 @@ const storage = multer.diskStorage({
     cb(null, "public/uploads/");
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname);
+    cb(null, Date.now() + "-" + file.originalname); // avoid overwriting files
   },
 });
 
@@ -73,9 +73,9 @@ router.post("/create", upload.array("listingPhotos"), async (req, res) => {
 });
 
 /* GET FILTERED LISTINGS */
-router.get("/", async (req, res) => {
+router.get("/search", async (req, res) => {
   try {
-    const { city, bedroomCount, guestCount, category } = req.query;
+    const { city, minPrice, maxPrice, category, bedroomCount, guestCount } = req.query;
 
     const filter = {};
 
@@ -83,13 +83,43 @@ router.get("/", async (req, res) => {
     if (category) filter.category = category;
     if (bedroomCount) filter.bedroomCount = { $gte: parseInt(bedroomCount) };
     if (guestCount) filter.guestCount = { $gte: parseInt(guestCount) };
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
 
-    const listings = await Listing.find(filter);
+    const listings = await Listing.find(filter).populate("creator");
     res.status(200).json(listings);
   } catch (err) {
-    console.error("Failed to fetch listings:", err);
+    console.error("Search listings failed:", err);
     res.status(500).json({ message: "Failed to fetch listings" });
   }
 });
+
+/* GET SINGLE LISTING */
+router.get("/:id", async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id).populate("creator");
+    if (!listing) return res.status(404).json({ message: "Listing not found" });
+    res.status(200).json(listing);
+  } catch (err) {
+    console.error("Fetch listing error:", err);
+    res.status(500).json({ message: "Failed to fetch listing" });
+  }
+});
+
+
+// GET ALL LISTINGS
+router.get("/", async (req, res) => {
+  try {
+    const listings = await Listing.find().populate("creator"); // populate host
+    res.status(200).json(listings);
+  } catch (err) {
+    console.error("Fetch listings failed:", err);
+    res.status(500).json({ message: "Failed to fetch listings" });
+  }
+});
+
 
 module.exports = router;

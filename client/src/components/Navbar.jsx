@@ -7,17 +7,31 @@ import "../styles/Navbar.scss";
 import { Link, useNavigate } from "react-router-dom";
 import { setLogout } from "../redux/state";
 
-
 const Navbar = () => {
   const [dropdownMenu, setDropdownMenu] = useState(false);
-
   const user = useSelector((state) => state.user);
-
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const [search, setSearch] = useState("")
+  // Search states
+  const [location, setLocation] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
 
-  const navigate = useNavigate()
+  // Handle search submit
+  const handleSearch = () => {
+    const query = new URLSearchParams({
+      city: location,
+      minPrice,
+      maxPrice,
+    }).toString();
+    navigate(`/properties/search?${query}`);
+
+    // Clear search inputs
+  setLocation("");
+  setMinPrice("");
+  setMaxPrice("");
+  };
 
   return (
     <div className="navbar">
@@ -25,18 +39,31 @@ const Navbar = () => {
         <img src="/assets/logo.png" alt="logo" />
       </a>
 
+      {/* Search bar with filters */}
       <div className="navbar_search">
         <input
           type="text"
-          placeholder="Search ..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Location ..."
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
         />
-        <IconButton disabled={search === ""}>
-          <Search
-            sx={{ color: variables.pinkred }}
-            onClick={() => {navigate(`/properties/search/${search}`)}}
-          />
+        <input
+          type="number"
+          placeholder="Min Price"
+          value={minPrice}
+          onChange={(e) => setMinPrice(e.target.value)}
+        />
+        <input
+          type="number"
+          placeholder="Max Price"
+          value={maxPrice}
+          onChange={(e) => setMaxPrice(e.target.value)}
+        />
+        <IconButton
+          disabled={location === "" && minPrice === "" && maxPrice === ""}
+          onClick={handleSearch}
+        >
+          <Search sx={{ color: variables.pinkred }} />
         </IconButton>
       </div>
 
@@ -84,15 +111,21 @@ const Navbar = () => {
             <Link to={`/${user._id}/properties`}>Property List</Link>
             <Link to={`/${user._id}/reservations`}>Reservation List</Link>
             <Link to="/create-listing">Become A Host</Link>
-
             <Link
               to="/login"
               onClick={() => {
+                // Clear Redux state
                 dispatch(setLogout());
+                // Clear localStorage
+                localStorage.removeItem("user");
+                localStorage.removeItem("token");
+                // Force reload so back button doesn't show cached logged-in state
+                navigate("/login", { replace: true });
               }}
             >
               Log Out
             </Link>
+
           </div>
         )}
       </div>
