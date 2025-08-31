@@ -1,95 +1,145 @@
-@import "./variables.scss";
-@import "./breakpoints.scss";
-
 .register {
-  width: 100vw;
-  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
-  background: url("../../public/assets/register.jpg") center;
-  background-size: cover;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #c3a99f, #6394cc, #af93f4);
+  font-family: "Poppins", sans-serif;
 
-  &_content {
+  .register_content {
+    background-color: #ffffff;
+    padding: 3rem 2rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 450px;
+    text-align: center;
+    position: relative;
+    animation: fadeIn 0.8s ease-in-out;
+    h1.brand {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
     display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 40%;
-    padding: 40px;
-    background-color: rgba(0, 0, 0, 0.8);
-    border-radius: 20px;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
 
-    @include lg {
-      width: 60%
+    img {
+      width: 35px;
+      height: 35px;
+    }
+  }
+
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      color: #333;
     }
 
-    @include mm {
-      width: 80%
-    }
-
-    &_form {
+    form.register_content_form {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 15px;
 
       input {
-        width: 100%;
-        padding: 7px 15px;
-        background-color: transparent;
-        border: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-        outline: none;
-        text-align: center;
-        color: white;
-
-        input:not(:placeholder-shown):focus {
-          background: transparent; /* or background: none; */
-        }
-
-        &::placeholder {
-          color: white;
+        margin-bottom: 1rem;
+        padding: 0.9rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        font-size: 1rem;
+        transition: all 0.3s;
+        &:focus {
+          outline: none;
+          border-color: #f67280;
+          box-shadow: 0 0 5px rgba(246, 114, 128, 0.3);
         }
       }
 
       label {
         display: flex;
         flex-direction: column;
-        justify-content: center;
         align-items: center;
-        gap: 9px;
         cursor: pointer;
-        color: white;
-        font-size: 14px;
+        margin-bottom: 1rem;
 
         img {
-          width: 25px;
+          width: 90px;
+          height: 90px;
+          object-fit: cover;
+          border-radius: 50%;
+          margin-bottom: 0.5rem;
+          border: 2px dashed #f67280;
+          padding: 5px;
+          transition: all 0.3s;
+          &:hover {
+            transform: scale(1.05);
+          }
+        }
+
+        p {
+          font-size: 0.9rem;
+          color: #666;
         }
       }
 
       button {
-        margin-top: 15px;
-
-        @include buttonStyle;
-        width: 50%;
+        padding: 0.9rem;
+        background-color: #1e7aaf;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
 
         &:hover {
-          box-shadow: 0 0 10px 3px rgba(255, 255, 255);
+          background-color: #f45b68;
+          box-shadow: 0 5px 15px rgba(246, 114, 128, 0.3);
         }
+
+        &:disabled {
+          background-color: #ccc;
+          cursor: not-allowed;
+        }
+      }
+
+      p {
+        font-size: 0.85rem;
+        color: rgb(22, 50, 144);
+        margin-bottom: 1rem;
       }
     }
 
+    .profile-preview {
+      margin-bottom: 1rem;
+      max-width: 100px;
+      border-radius: 50%;
+      border: 2px solid #f67280;
+    }
+
     a {
+      display: inline-block;
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      color: #ff0026;
       text-decoration: none;
-      color: white;
-      font-size: 13px;
-      margin-top: 10px;
-      text-align: center;
+      font-weight: 500;
 
       &:hover {
         text-decoration: underline;
       }
     }
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
