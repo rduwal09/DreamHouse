@@ -1,18 +1,14 @@
 import { useState } from "react";
 import "../styles/ListingCard.scss";
-import {
-  ArrowForwardIos,
-  ArrowBackIosNew,
-  Favorite,
-} from "@mui/icons-material";
+import { ArrowForwardIos, ArrowBackIosNew, Favorite } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { setWishList } from "../redux/state";
 
 const ListingCard = ({
-  listingId,
+  _id, // make sure this is used as listingId
   creator,
-  listingPhotoPaths,
+  listingPhotoPaths = [],
   city,
   province,
   country,
@@ -24,79 +20,39 @@ const ListingCard = ({
   totalPrice,
   booking,
 }) => {
-  /* SLIDER FOR IMAGES */
   const [currentIndex, setCurrentIndex] = useState(0);
-
-  const goToPrevSlide = () => {
-    setCurrentIndex(
-      (prevIndex) =>
-        (prevIndex - 1 + listingPhotoPaths.length) % listingPhotoPaths.length
-    );
-  };
-
-  const goToNextSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % listingPhotoPaths.length);
-  };
-
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
-  /* ADD TO WISHLIST */
   const user = useSelector((state) => state.user);
   const wishList = user?.wishList || [];
 
-  const isLiked = wishList?.find((item) => item?._id === listingId);
+  const isLiked = wishList?.find((item) => item?._id === _id);
 
   const patchWishList = async () => {
-    if (user?._id !== creator._id) {
+    if (!creator?._id || !user?._id || creator._id === user._id) return;
     const response = await fetch(
-      `http://localhost:3001/users/${user?._id}/${listingId}`,
-      {
-        method: "PATCH",
-        header: {
-          "Content-Type": "application/json",
-        },
-      }
+      `http://localhost:3001/users/${user._id}/${_id}`,
+      { method: "PATCH", headers: { "Content-Type": "application/json" } }
     );
     const data = await response.json();
     dispatch(setWishList(data.wishList));
-  } else { return }
   };
 
+  const goToPrevSlide = () =>
+    setCurrentIndex((prev) => (prev - 1 + listingPhotoPaths.length) % listingPhotoPaths.length);
+  const goToNextSlide = () => setCurrentIndex((prev) => (prev + 1) % listingPhotoPaths.length);
+
   return (
-    <div
-      className="listing-card"
-      onClick={() => {
-        navigate(`/properties/${listingId}`);
-      }}
-    >
+    <div className="listing-card" onClick={() => navigate(`/properties/${_id}`)}>
       <div className="slider-container">
-        <div
-          className="slider"
-          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-        >
-          {listingPhotoPaths?.map((photo, index) => (
+        <div className="slider" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
+          {listingPhotoPaths.map((photo, index) => (
             <div key={index} className="slide">
-              <img
-                src={`http://localhost:3001/${photo?.replace("public", "")}`}
-                alt={`photo ${index + 1}`}
-              />
-              <div
-                className="prev-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goToPrevSlide(e);
-                }}
-              >
+              <img src={`http://localhost:3001/${photo.replace("public", "")}`} alt={`photo ${index}`} />
+              <div className="prev-button" onClick={(e) => { e.stopPropagation(); goToPrevSlide(); }}>
                 <ArrowBackIosNew sx={{ fontSize: "15px" }} />
               </div>
-              <div
-                className="next-button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goToNextSlide(e);
-                }}
-              >
+              <div className="next-button" onClick={(e) => { e.stopPropagation(); goToNextSlide(); }}>
                 <ArrowForwardIos sx={{ fontSize: "15px" }} />
               </div>
             </div>
@@ -104,42 +60,22 @@ const ListingCard = ({
         </div>
       </div>
 
-      <h3>
-        {city}, {province}, {country}
-      </h3>
+      <h3>{city}, {province}, {country}</h3>
       <p>{category}</p>
-
       {!booking ? (
         <>
           <p>{type}</p>
-          <p>
-            <span>${price}</span> per night
-          </p>
+          <p><span>${price}</span> per night</p>
         </>
       ) : (
         <>
-          <p>
-            {startDate} - {endDate}
-          </p>
-          <p>
-            <span>${totalPrice}</span> total
-          </p>
+          <p>{startDate} - {endDate}</p>
+          <p><span>${totalPrice}</span> total</p>
         </>
       )}
 
-      <button
-        className="favorite"
-        onClick={(e) => {
-          e.stopPropagation();
-          patchWishList();
-        }}
-        disabled={!user}
-      >
-        {isLiked ? (
-          <Favorite sx={{ color: "red" }} />
-        ) : (
-          <Favorite sx={{ color: "white" }} />
-        )}
+      <button className="favorite" onClick={(e) => { e.stopPropagation(); patchWishList(); }} disabled={!user}>
+        {isLiked ? <Favorite sx={{ color: "red" }} /> : <Favorite sx={{ color: "white" }} />}
       </button>
     </div>
   );

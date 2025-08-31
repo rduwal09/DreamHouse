@@ -3,5 +3,9 @@
     "@tailwindcss/vite": "^4.1.11",
     "cors": "^2.8.5",
     "tailwindcss": "^4.1.11"
+  },
+  "devDependencies": {
+    "sass": "^1.91.0",
+    "sass-loader": "^16.0.5"
   }
 }

@@ -5,40 +5,53 @@ import ListingCard from "../components/ListingCard";
 import { useEffect, useState } from "react";
 import { setPropertyList } from "../redux/state";
 import Loader from "../components/Loader";
-import Footer from "../components/Footer"
+import Footer from "../components/Footer";
 
 const PropertyList = () => {
-  const [loading, setLoading] = useState(true)
-  const user = useSelector((state) => state.user)
-  const propertyList = user?.propertyList;
-  console.log(user)
+  const [loading, setLoading] = useState(true);
+  const user = useSelector((state) => state.user);
+  const propertyList = useSelector((state) => state.propertyList); // <-- get from Redux
 
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
+
   const getPropertyList = async () => {
     try {
+      if (!user?._id) return;
       const response = await fetch(`http://localhost:3001/users/${user._id}/properties`, {
-        method: "GET"
-      })
-      const data = await response.json()
-      console.log(data)
-      dispatch(setPropertyList(data))
-      setLoading(false)
+        method: "GET",
+      });
+      const data = await response.json();
+      dispatch(setPropertyList(data));
     } catch (err) {
-      console.log("Fetch all properties failed", err.message)
+      console.log("Fetch all properties failed", err.message);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    getPropertyList();
+  }, [user]); // <-- wait for user to load
+
+  if (loading) return <Loader />;
+
+  if (!propertyList?.length) {
+    return (
+      <>
+        <Navbar />
+        <h1 className="title-list">Your Property List</h1>
+        <p className="no-results">You have no properties listed yet.</p>
+        <Footer />
+      </>
+    );
   }
 
- useEffect(() => {
-    getPropertyList()
-  }, [])
-
-
-  return loading ? <Loader /> : (
+  return (
     <>
       <Navbar />
       <h1 className="title-list">Your Property List</h1>
       <div className="list">
-        {propertyList?.map(
+        {propertyList.map(
           ({
             _id,
             creator,
@@ -52,6 +65,7 @@ const PropertyList = () => {
             booking = false,
           }) => (
             <ListingCard
+              key={_id}
               listingId={_id}
               creator={creator}
               listingPhotoPaths={listingPhotoPaths}
@@ -66,7 +80,6 @@ const PropertyList = () => {
           )
         )}
       </div>
-
       <Footer />
     </>
   );

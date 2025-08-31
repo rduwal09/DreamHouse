@@ -9,27 +9,28 @@ import { setListings } from "../redux/state";
 const Listings = () => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
-
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const listings = useSelector((state) => state.listings);
+  const listings = useSelector((state) => state.listings || []); // ensure array
 
   const getFeedListings = async () => {
+    setLoading(true);
     try {
-      const response = await fetch(
+      // Fetch all listings if category is "All"
+      const endpoint =
         selectedCategory !== "All"
           ? `http://localhost:3001/properties?category=${selectedCategory}`
-          : "http://localhost:3001/properties",
-        {
-          method: "GET",
-        }
-      );
+          : "http://localhost:3001/properties";
+
+      const response = await fetch(endpoint);
+      if (!response.ok) throw new Error("Failed to fetch listings");
 
       const data = await response.json();
       dispatch(setListings({ listings: data }));
-      setLoading(false);
     } catch (err) {
       console.log("Fetch Listings Failed", err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,7 +43,9 @@ const Listings = () => {
       <div className="category-list">
         {categories?.map((category, index) => (
           <div
-            className={`category ${category.label === selectedCategory ? "selected" : ""}`}
+            className={`category ${
+              category.label === selectedCategory ? "selected" : ""
+            }`}
             key={index}
             onClick={() => setSelectedCategory(category.label)}
           >
@@ -54,36 +57,16 @@ const Listings = () => {
 
       {loading ? (
         <Loader />
-      ) : (
+      ) : listings.length > 0 ? (
         <div className="listings">
-          {listings.map(
-            ({
-              _id,
-              creator,
-              listingPhotoPaths,
-              city,
-              province,
-              country,
-              category,
-              type,
-              price,
-              booking=false
-            }) => (
-              <ListingCard
-                listingId={_id}
-                creator={creator}
-                listingPhotoPaths={listingPhotoPaths}
-                city={city}
-                province={province}
-                country={country}
-                category={category}
-                type={type}
-                price={price}
-                booking={booking}
-              />
-            )
-          )}
+          {listings.map((listing) => (
+            <ListingCard key={listing._id} {...listing} />
+          ))}
         </div>
+      ) : (
+        <h2 style={{ textAlign: "center", marginTop: "2rem" }}>
+          No listings found
+        </h2>
       )}
     </>
   );
