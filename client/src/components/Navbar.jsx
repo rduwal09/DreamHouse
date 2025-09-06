@@ -1,7 +1,7 @@
 import { IconButton } from "@mui/material";
 import { Search, Person, Menu } from "@mui/icons-material";
 import variables from "../styles/variables.scss";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import "../styles/Navbar.scss";
 import { Link, useNavigate } from "react-router-dom";
@@ -12,13 +12,13 @@ const Navbar = () => {
   const user = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const dropdownRef = useRef(null);
 
   // Search states
   const [location, setLocation] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
 
-  // Handle search submit
   const handleSearch = () => {
     const query = new URLSearchParams({
       city: location,
@@ -26,20 +26,36 @@ const Navbar = () => {
       maxPrice,
     }).toString();
     navigate(`/properties/search?${query}`);
-
-    // Clear search inputs
-  setLocation("");
-  setMinPrice("");
-  setMaxPrice("");
+    setLocation("");
+    setMinPrice("");
+    setMaxPrice("");
   };
+
+  const handleLogout = () => {
+    dispatch(setLogout());
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    setDropdownMenu(false);
+    navigate("/login", { replace: true });
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="navbar">
-      <a href="/">
-        <img src="/assets/logo.png" alt="logo" />
-      </a>
+      <Link to="/" className="navbar_logo">
+        <img src="/assets/logo.png" alt="DreamHouse logo" />
+      </Link>
 
-      {/* Search bar with filters */}
+      {/* Search bar */}
       <div className="navbar_search">
         <input
           type="text"
@@ -60,24 +76,22 @@ const Navbar = () => {
           onChange={(e) => setMaxPrice(e.target.value)}
         />
         <IconButton
-          disabled={location === "" && minPrice === "" && maxPrice === ""}
+          disabled={!location && !minPrice && !maxPrice}
           onClick={handleSearch}
         >
           <Search sx={{ color: variables.pinkred }} />
         </IconButton>
       </div>
 
-      <div className="navbar_right">
-        {user ? (
-          <a href="/create-listing" className="host">
-            Become A Host
-          </a>
-        ) : (
-          <a href="/login" className="host">
-            Become A Host
-          </a>
+      <div className="navbar_right" ref={dropdownRef}>
+        {/* Host button: Become A Host or Add New Listing */}
+        {user && (
+          <Link to="/create-listing" className="host">
+            {user.isHost ? "Add New Listing" : "Become A Host"}
+          </Link>
         )}
 
+        {/* Account dropdown */}
         <button
           className="navbar_right_account"
           onClick={() => setDropdownMenu(!dropdownMenu)}
@@ -87,45 +101,77 @@ const Navbar = () => {
             <Person sx={{ color: variables.darkgrey }} />
           ) : (
             <img
-              src={`http://localhost:3001/${user.profileImagePath.replace(
-                "public",
-                ""
-              )}`}
-              alt="profile photo"
+              src={
+                user.profileImagePath
+                  ? `http://localhost:3001/${user.profileImagePath.replace(
+                      "public",
+                      ""
+                    )}`
+                  : "/assets/default-avatar.png"
+              }
+              alt="profile"
               style={{ objectFit: "cover", borderRadius: "50%" }}
             />
           )}
         </button>
 
-        {dropdownMenu && !user && (
+        {dropdownMenu && (
           <div className="navbar_right_accountmenu">
-            <Link to="/login">Log In</Link>
-            <Link to="/register">Sign Up</Link>
-          </div>
-        )}
+            {!user ? (
+              <>
+                <Link to="/login" onClick={() => setDropdownMenu(false)}>
+                  Log In
+                </Link>
+                <Link to="/register" onClick={() => setDropdownMenu(false)}>
+                  Sign Up
+                </Link>
+              </>
+            ) : (
+              <>
+                {/* Host dashboard visible only to hosts */}
+                {user.isHost && (
+                  <Link
+                    to="/host/dashboard"
+                    onClick={() => setDropdownMenu(false)}
+                  >
+                    Host Dashboard
+                  </Link>
+                )}
 
-        {dropdownMenu && user && (
-          <div className="navbar_right_accountmenu">
-            <Link to={`/${user._id}/trips`}>Trip List</Link>
-            <Link to={`/${user._id}/wishList`}>Wish List</Link>
-            <Link to={`/${user._id}/properties`}>Property List</Link>
-            <Link to={`/${user._id}/reservations`}>Reservation List</Link>
-            <Link to="/create-listing">Become A Host</Link>
-            <Link
-              to="/login"
-              onClick={() => {
-                // Clear Redux state
-                dispatch(setLogout());
-                // Clear localStorage
-                localStorage.removeItem("user");
-                localStorage.removeItem("token");
-                // Force reload so back button doesn't show cached logged-in state
-                navigate("/login", { replace: true });
-              }}
-            >
-              Log Out
-            </Link>
+                {/* Tenant dashboards */}
+                
+                <Link
+                  to={`/${user._id}/wishList`}
+                  onClick={() => setDropdownMenu(false)}
+                >
+                  Wish List
+                </Link>
+                {/* <Link
+                  to={`/${user._id}/properties`}
+                  onClick={() => setDropdownMenu(false)}
+                >
+                  Property List
+                </Link> */}
+                <Link
+                  to={`/${user._id}/reservations`}
+                  onClick={() => setDropdownMenu(false)}
+                >
+                  Reservation List
+                </Link>
 
+                {/* Become a host / Add New Listing inside dropdown as well */}
+                <Link
+                  to="/create-listing"
+                  onClick={() => setDropdownMenu(false)}
+                >
+                  {user.isHost ? "Add New Listing" : "Become A Host"}
+                </Link>
+
+                <button className="logout_btn" onClick={handleLogout}>
+                  Log Out
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
