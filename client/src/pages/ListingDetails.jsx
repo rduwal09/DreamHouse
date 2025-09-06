@@ -10,15 +10,23 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useSelector } from "react-redux";
 
+// ✅ Utility to handle image URLs consistently
+const getImageUrl = (path) => {
+  if (!path) return null;
+  const relativePath = path.replace(/^public[\\/]/, "");
+  return `http://localhost:3001/${encodeURI(relativePath)}`;
+};
+
 const ListingDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [listing, setListing] = useState(null);
-
   const [reviews, setReviews] = useState([]);
   const [average, setAverage] = useState({ averageRating: 0, count: 0 });
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const [rentalRequestStatus, setRentalRequestStatus] = useState(null);
+  const [existingBookingId, setExistingBookingId] = useState(null);
 
   const { listingId } = useParams();
   const navigate = useNavigate();
@@ -39,8 +47,9 @@ const ListingDetails = () => {
 
   const isHost = String(listing?.creator?._id) === String(userId);
 
-  // Fetch listing, reviews, and average rating
   useEffect(() => {
+    let intervalId;
+
     const fetchListing = async () => {
       try {
         const res = await fetch(`http://localhost:3001/properties/${listingId}`);
@@ -60,7 +69,7 @@ const ListingDetails = () => {
         const data = await res.json();
         setReviews(data);
       } catch (err) {
-        console.error("Failed to fetch reviews:", err);
+        console.error(err);
       }
     };
 
@@ -68,76 +77,118 @@ const ListingDetails = () => {
       try {
         const res = await fetch(`http://localhost:3001/reviews/${listingId}/average`);
         const data = await res.json();
-        // Ensure we have default structure
-        setAverage({
-          averageRating: data.averageRating || 0,
-          count: data.count || 0,
-        });
+        setAverage({ averageRating: data.averageRating || 0, count: data.count || 0 });
       } catch (err) {
-        console.error("Failed to fetch average rating:", err);
+        console.error(err);
         setAverage({ averageRating: 0, count: 0 });
+      }
+    };
+
+    const fetchExistingRequest = async () => {
+      if (!userId) return;
+      try {
+        const res = await fetch(
+          `http://localhost:3001/bookings/?userId=${userId}&role=tenant`
+        );
+        if (res.ok) {
+          const bookings = await res.json();
+          const booking = bookings.find(
+            (b) => String(b.listing._id) === String(listingId)
+          );
+          if (booking) {
+            setRentalRequestStatus(booking.status);
+            setExistingBookingId(booking._id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch existing booking:", err);
       }
     };
 
     fetchListing();
     fetchReviews();
     fetchAverage();
-  }, [listingId]);
+    fetchExistingRequest();
 
-  // Booking
-  const handleBooking = async () => {
-    if (!listing || !userId || isHost) return;
+    intervalId = setInterval(fetchExistingRequest, 5000);
+    return () => clearInterval(intervalId);
+  }, [listingId, userId]);
 
-    try {
-      const bookingForm = {
-        customerId: userId,
-        listingId,
-        hostId: listing.creator._id,
-        startDate: dateRange[0].startDate.toDateString(),
-        endDate: dateRange[0].endDate.toDateString(),
-        totalPrice: listing.price * dayCount,
-      };
-
-      const res = await fetch("http://localhost:3001/bookings/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bookingForm),
-      });
-
-      if (res.ok) navigate(`/${userId}/trips`);
-    } catch (err) {
-      console.error("Booking failed:", err);
-    }
-  };
-
-  // Review submission
-  const handleReviewSubmit = async (e) => {
-  e.preventDefault();
-  if (!rating || !comment) return;
+  const handleRentalRequest = async () => {
+  if (!listing || !userId || isHost) return;
 
   try {
-    const res = await fetch("http://localhost:3001/reviews", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ listingId, rating, comment, userId }),
-    });
+    const requestData = {
+      tenant: userId,
+      landlord: listing.creator._id,
+      listing: listingId,
+      startDate: dateRange[0].startDate.toISOString(),
+      endDate: dateRange[0].endDate.toISOString(),
+      totalPrice: listing.price * dayCount,
+    };
+
+    let res;
+    // If previous request was rejected, update it instead of creating a new one
+    if (rentalRequestStatus === "rejected" && existingBookingId) {
+      res = await fetch(
+        `http://localhost:3001/bookings/${existingBookingId}/request-again`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestData),
+        }
+      );
+    } else {
+      res = await fetch("http://localhost:3001/bookings/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData),
+      });
+    }
 
     if (res.ok) {
       const data = await res.json();
-      setReviews((prev) => [data.review, ...prev]); // add new review
-      setAverage(data.average); // update average
-      setRating(0);
-      setComment("");
+      setRentalRequestStatus("pending");
+      setExistingBookingId(data._id);
+      alert("Rental request submitted!");
     } else {
       const error = await res.json();
-      alert(error.message || "Failed to submit review");
+      alert(error.message || "Failed to submit request");
     }
   } catch (err) {
     console.error(err);
-    alert("Failed to submit review");
+    alert("Failed to submit request");
   }
 };
 
+
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!rating || !comment) return;
+
+    try {
+      const res = await fetch("http://localhost:3001/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingId, rating, comment, userId }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setReviews((prev) => [data.review, ...prev]);
+        setAverage(data.average);
+        setRating(0);
+        setComment("");
+      } else {
+        const error = await res.json();
+        alert(error.message || "Failed to submit review");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit review");
+    }
+  };
 
   if (loading) return <Loader />;
   if (error) return <p style={{ textAlign: "center", marginTop: "2rem" }}>{error}</p>;
@@ -147,23 +198,16 @@ const ListingDetails = () => {
     <>
       <Navbar />
       <div className="listing-details">
-        {/* Title */}
         <div className="title">
           <h1>{listing.title}</h1>
         </div>
 
-        {/* Photos */}
         <div className="photos">
           {listing.listingPhotoPaths?.map((item, idx) => (
-            <img
-              key={idx}
-              src={`http://localhost:3001/${item.replace("public", "")}`}
-              alt={`listing-${idx}`}
-            />
+            <img key={idx} src={getImageUrl(item)} alt={`listing-${idx}`} />
           ))}
         </div>
 
-        {/* Basic Info */}
         <h2>
           {listing.type} in {listing.city}, {listing.province}, {listing.country}
         </h2>
@@ -173,19 +217,14 @@ const ListingDetails = () => {
         </p>
         <hr />
 
-        {/* Host Info */}
         <div className="profile">
-          <img
-            src={`http://localhost:3001/${listing.creator?.profileImagePath?.replace("public", "")}`}
-            alt="host"
-          />
+          <img src={getImageUrl(listing.creator?.profileImagePath)} alt="host" />
           <h3>
             Hosted by {listing.creator?.firstName} {listing.creator?.lastName}
           </h3>
         </div>
         <hr />
 
-        {/* Description */}
         <h3>Description</h3>
         <p>{listing.description}</p>
         <hr />
@@ -198,7 +237,6 @@ const ListingDetails = () => {
           </>
         )}
 
-        {/* Booking Section */}
         <div className="booking">
           <div>
             <h2>What this place offers?</h2>
@@ -213,29 +251,60 @@ const ListingDetails = () => {
           </div>
 
           <div>
-            <h2>Booking</h2>
+            <h2>Rental</h2>
             <div className="date-range-calendar">
               <DateRange ranges={dateRange} onChange={handleSelect} />
               <h2>
                 ${listing.price} x {dayCount} {dayCount > 1 ? "nights" : "night"}
               </h2>
               <h2>Total price: ${listing.price * dayCount}</h2>
-              <p>Start Date: {dateRange[0].startDate.toDateString()}</p>
-              <p>End Date: {dateRange[0].endDate.toDateString()}</p>
+              <p>Requested Start Date: {dateRange[0].startDate.toDateString()}</p>
+              <p>Requested End Date: {dateRange[0].endDate.toDateString()}</p>
 
-              <button
-                className="button"
-                onClick={handleBooking}
-                disabled={isHost}
-                title={isHost ? "You cannot book your own property" : ""}
-              >
-                {isHost ? "Cannot Book Own Property" : "BOOKING"}
-              </button>
+              {isHost ? (
+                  <button className="button" disabled>
+                    Cannot Request Own Property
+                  </button>
+                ) : rentalRequestStatus === "pending" ? (
+                  <button className="button" disabled>
+                    Request Pending
+                  </button>
+                ) : rentalRequestStatus === "approved" ? (
+                  <>
+                    <button className="button" disabled>
+                      Request Approved
+                    </button>
+                    <button
+                      className="button"
+                      style={{ marginLeft: "10px", backgroundColor: "#22c55e" }}
+                      onClick={() => navigate(`/checkout/${existingBookingId}`)}
+                    >
+                      Pay Now
+                    </button>
+                  </>
+                ) : rentalRequestStatus === "rejected" ? (
+                  <>
+                    <button className="button" disabled>
+                      Request Rejected
+                    </button>
+                    <button
+                      className="button"
+                      style={{ marginLeft: "10px", backgroundColor: "#f97316" }}
+                      onClick={handleRentalRequest}
+                    >
+                      Request Again
+                    </button>
+                  </>
+                ) : (
+                  <button className="button" onClick={handleRentalRequest}>
+                    Request to Rent
+                  </button>
+                )}
+
             </div>
           </div>
         </div>
 
-        {/* Reviews Section */}
         <div className="reviews mt-8">
           <h2>Reviews</h2>
           <p>

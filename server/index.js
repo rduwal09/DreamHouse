@@ -23,6 +23,7 @@ const listingRoutes = require("./routes/listing.js");
 const bookingRoutes = require("./routes/booking.js");
 const userRoutes = require("./routes/user.js");
 const reviewRoutes = require("./routes/reviews");
+const reservationRoutes = require("./routes/reservation.js");
 
 app.use('/api/admin', adminRoutes);
 app.use("/auth", authRoutes);
@@ -30,6 +31,7 @@ app.use("/properties", listingRoutes);
 app.use("/bookings", bookingRoutes);
 app.use("/users", userRoutes);
 app.use("/reviews", reviewRoutes);
+app.use("/", reservationRoutes);
 
 /* MONGOOSE SETUP */
 const PORT = 3001;

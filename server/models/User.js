@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const UserSchema = new mongoose.Schema(
   {
@@ -23,10 +23,7 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    tripList: {
-      type: Array,
-      default: [],
-    },
+  
     wishList: {
       type: Array,
       default: [],
@@ -38,10 +35,14 @@ const UserSchema = new mongoose.Schema(
     reservationList: {
       type: Array,
       default: [],
-    }
+    },
+    isHost: {
+      type: Boolean,
+      default: false, // New field to identify hosts
+    },
   },
   { timestamps: true }
-)
+);
 
-const User = mongoose.model("User", UserSchema)
-module.exports = User
+const User = mongoose.model("User", UserSchema);
+module.exports = User;

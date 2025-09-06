@@ -1,5 +1,5 @@
-@import "./variables.scss";
-@import "./breakpoints.scss";
+@use "./variables" as *;
+@use "./breakpoints" as *;
 
 .navbar {
   padding: 10px 60px;
@@ -7,6 +7,8 @@
   justify-content: space-between;
   align-items: center;
   position: relative;
+  font-family: "Arial", sans-serif; // consistent font
+  font-size: 14px; // consistent font size
 
   @include sm {
     padding: 10px 20px;
@@ -21,14 +23,17 @@
     border: 1px solid $grey;
     border-radius: 30px;
     height: 50px;
-    padding: 0px 20px;
+    padding: 0 20px;
     display: flex;
-    gap: 40px;
+    gap: 20px;
     align-items: center;
 
     input {
       border: none;
       outline: none;
+      width: 100%;
+      font-family: inherit;
+      font-size: inherit;
     }
 
     &:hover {
@@ -50,6 +55,9 @@
       color: $blue;
       font-weight: 700;
       cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+      transition: color 0.3s;
 
       &:hover {
         color: $pinkred;
@@ -67,10 +75,10 @@
       padding: 0 10px;
       border: 1px solid $grey;
       border-radius: 30px;
-      display: flex;
       gap: 10px;
       background-color: white;
       cursor: pointer;
+      transition: box-shadow 0.3s;
 
       &:hover {
         @include shadow;
@@ -79,38 +87,54 @@
       img {
         width: 40px;
         height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
       }
     }
 
     &_accountmenu {
       position: absolute;
-      background-color: white;
-      right: 60px;
       top: 80px;
+      right: 60px;
       display: flex;
       flex-direction: column;
       width: 200px;
       padding: 10px 0;
+      background-color: white;
       border: 1px solid $lightgrey;
       border-radius: 20px;
       @include shadow;
       z-index: 9999;
+      font-family: inherit;
+      font-size: inherit;
 
       @include sm {
         right: 20px;
       }
 
-      a {
+      a,
+      button.logout_btn {
         width: 100%;
         padding: 8px 15px;
-        text-decoration: none;
-        color: $blue;
+        text-align: left;
         font-weight: 700;
+        font-family: inherit;
+        font-size: inherit;
+        color: $blue;
+        text-decoration: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
 
         &:hover {
           color: $pinkred;
           background-color: rgba(217, 213, 213, 0.2);
         }
+      }
+
+      button.logout_btn {
+        text-align: left;
       }
     }
   }

@@ -31,15 +31,28 @@ const LoginPage = () => {
       const data = await response.json();
 
       if (response.ok && data.user && data.token) {
-        dispatch(setLogin({ user: data.user, token: data.token }));
-        localStorage.setItem("user", JSON.stringify(data.user));
+        // Ensure isHost is boolean
+        const userWithBooleanHost = {
+          ...data.user,
+          isHost: data.user.isHost === true || data.user.isHost === "true",
+        };
+
+        // Save user and token in Redux & localStorage
+        dispatch(setLogin({ user: userWithBooleanHost, token: data.token }));
+        localStorage.setItem("user", JSON.stringify(userWithBooleanHost));
         localStorage.setItem("token", data.token);
-        navigate("/");
+
+        // Redirect based on isHost
+        if (userWithBooleanHost.isHost) {
+          navigate("/host/dashboard", { replace: true });
+        } else {
+          navigate("/", { replace: true });
+        }
       } else {
         setError(data.message || "Email or password is incorrect.");
       }
     } catch (err) {
-      console.error("Login failed", err.message);
+      console.error("Login failed", err);
       setError("Login failed. Please try again later.");
     } finally {
       setLoading(false);
@@ -50,11 +63,14 @@ const LoginPage = () => {
     e.preventDefault();
     setResetMessage("");
     try {
-      const response = await fetch("http://localhost:3001/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: resetEmail }),
-      });
+      const response = await fetch(
+        "http://localhost:3001/auth/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: resetEmail }),
+        }
+      );
 
       const data = await response.json();
       if (response.ok) {
@@ -71,7 +87,9 @@ const LoginPage = () => {
     <div className="login-page">
       <div className="overlay"></div>
       <div className="login-card">
-        <h1 className="brand"><img src="/assets/logo.png" alt="house" />DreamHouse</h1>
+        <h1 className="brand">
+          <img src="/assets/logo.png" alt="DreamHouse logo" /> DreamHouse
+        </h1>
         <h2>Welcome Back</h2>
         <p className="subtitle">Log in to find your perfect home</p>
 
@@ -106,7 +124,10 @@ const LoginPage = () => {
       {/* Forgot Password Modal */}
       {forgotModal && (
         <div className="modal_overlay" onClick={() => setForgotModal(false)}>
-          <div className="modal_content" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal_content"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3>Reset Password</h3>
             <form onSubmit={handleForgotSubmit}>
               <input
@@ -119,7 +140,10 @@ const LoginPage = () => {
               <button type="submit">Send Reset Link</button>
             </form>
             {resetMessage && <p className="message">{resetMessage}</p>}
-            <button className="close_modal" onClick={() => setForgotModal(false)}>
+            <button
+              className="close_modal"
+              onClick={() => setForgotModal(false)}
+            >
               Close
             </button>
           </div>

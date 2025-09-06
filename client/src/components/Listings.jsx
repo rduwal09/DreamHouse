@@ -19,7 +19,7 @@ const Listings = () => {
       // Fetch all listings if category is "All"
       const endpoint =
         selectedCategory !== "All"
-          ? `http://localhost:3001/properties?category=${selectedCategory}`
+          ? `http://localhost:3001/properties/search?category=${selectedCategory}`
           : "http://localhost:3001/properties";
 
       const response = await fetch(endpoint);

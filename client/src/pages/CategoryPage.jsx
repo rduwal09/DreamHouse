@@ -18,7 +18,7 @@ const CategoryPage = () => {
   const getFeedListings = async () => {
     try {
       const response = await fetch(
-          `http://localhost:3001/properties?category=${category}`,
+          `http://localhost:3001/properties/search?category=${category}`,
         {
           method: "GET",
         }
@@ -57,7 +57,7 @@ const CategoryPage = () => {
             booking = false,
           }) => (
             <ListingCard
-              listingId={_id}
+              _id={_id}
               creator={creator}
               listingPhotoPaths={listingPhotoPaths}
               city={city}

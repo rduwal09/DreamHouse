@@ -1,30 +1,28 @@
-import "../styles/CreateListing.scss";
+import "../styles/CreateListing.scss"; // reuse same styles
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import { categories, types, facilities } from "../data";
-
 import { RemoveCircleOutline, AddCircleOutline } from "@mui/icons-material";
-import variables from "../styles/variables.scss";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { IoIosImages } from "react-icons/io";
-import { useState, useEffect } from "react";
 import { BiTrash } from "react-icons/bi";
-import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import Footer from "../components/Footer";
+import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate, useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-import { setLogin } from "../redux/state";
+import axios from "axios";
 
-const CreateListing = () => {
+// Utility function to resolve image URLs correctly
+const getImageUrl = (path) => {
+  if (!path) return null;
+  const relativePath = path.replace(/^public[\\/]/, "");
+  return `http://localhost:3001/${encodeURI(relativePath)}`;
+};
+
+const EditListing = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const user = useSelector((state) => state.user); // current logged-in user
-
-  // 1️⃣ Redirect logged-out users
-  useEffect(() => {
-    if (!user || !user._id) {
-      navigate("/login");
-    }
-  }, [user, navigate]);
+  const user = useSelector((state) => state.user);
 
   const [category, setCategory] = useState("");
   const [type, setType] = useState("");
@@ -37,17 +35,69 @@ const CreateListing = () => {
     country: "",
   });
 
-  const handleChangeLocation = (e) => {
-    const { name, value } = e.target;
-    setFormLocation({ ...formLocation, [name]: value });
-  };
-
   const [guestCount, setGuestCount] = useState(1);
   const [bedroomCount, setBedroomCount] = useState(1);
   const [bedCount, setBedCount] = useState(1);
   const [bathroomCount, setBathroomCount] = useState(1);
 
   const [amenities, setAmenities] = useState([]);
+
+  const [photos, setPhotos] = useState([]); // includes new uploads
+  const [existingPhotos, setExistingPhotos] = useState([]); // paths from server
+
+  const [formDescription, setFormDescription] = useState({
+    title: "",
+    description: "",
+    highlight: "",
+    highlightDesc: "",
+    price: 0,
+  });
+
+  // Fetch listing details
+  useEffect(() => {
+    const fetchListing = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3001/properties/${id}`);
+        const data = res.data;
+        setCategory(data.category);
+        setType(data.type);
+        setFormLocation({
+          streetAddress: data.streetAddress,
+          aptSuite: data.aptSuite,
+          city: data.city,
+          province: data.province,
+          country: data.country,
+        });
+        setGuestCount(data.guestCount);
+        setBedroomCount(data.bedroomCount);
+        setBedCount(data.bedCount);
+        setBathroomCount(data.bathroomCount);
+        setAmenities(data.amenities || []);
+        setExistingPhotos(data.listingPhotoPaths || []);
+        setFormDescription({
+          title: data.title,
+          description: data.description,
+          highlight: data.highlight,
+          highlightDesc: data.highlightDesc,
+          price: data.price,
+        });
+      } catch (err) {
+        console.error("Failed to fetch listing", err);
+      }
+    };
+    fetchListing();
+  }, [id]);
+
+  const handleChangeLocation = (e) => {
+    const { name, value } = e.target;
+    setFormLocation({ ...formLocation, [name]: value });
+  };
+
+  const handleChangeDescription = (e) => {
+    const { name, value } = e.target;
+    setFormDescription({ ...formDescription, [name]: value });
+  };
+
   const handleSelectAmenities = (facility) => {
     if (amenities.includes(facility)) {
       setAmenities((prev) => prev.filter((f) => f !== facility));
@@ -56,13 +106,22 @@ const CreateListing = () => {
     }
   };
 
-  const [photos, setPhotos] = useState([]);
   const handleUploadPhotos = (e) => {
     const newPhotos = Array.from(e.target.files).map((file) => ({
       id: uuidv4(),
       file,
     }));
     setPhotos((prev) => [...prev, ...newPhotos]);
+  };
+
+  const handleRemovePhoto = (id) => {
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const removeExistingPhoto = (index) => {
+    const removed = existingPhotos[index];
+    setExistingPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPhotos((prev) => [...prev, { id: uuidv4(), file: null, removePath: removed }]);
   };
 
   const handleDragPhoto = (result) => {
@@ -73,34 +132,9 @@ const CreateListing = () => {
     setPhotos(items);
   };
 
-  const handleRemovePhoto = (id) => {
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
-  };
-
-  const [formDescription, setFormDescription] = useState({
-    title: "",
-    description: "",
-    highlight: "",
-    highlightDesc: "",
-    price: 0,
-  });
-
-  const handleChangeDescription = (e) => {
-    const { name, value } = e.target;
-    setFormDescription({ ...formDescription, [name]: value });
-  };
-
-  // 2️⃣ Updated handlePost with auth check & token
-  const handlePost = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!user || !user._id) {
-      alert("You must be logged in to create a listing!");
-      navigate("/login");
-      return;
-    }
-
-    // Validate required fields
     if (
       !category ||
       !type ||
@@ -114,52 +148,44 @@ const CreateListing = () => {
       !formDescription.highlightDesc ||
       formDescription.price <= 0
     ) {
-      alert("Please fill up all information!");
+      alert("Please fill all required fields!");
       return;
     }
 
     try {
       const listingForm = new FormData();
-      listingForm.append("creator", user._id);
       listingForm.append("category", category);
       listingForm.append("type", type);
-      Object.keys(formLocation).forEach((key) =>
-        listingForm.append(key, formLocation[key])
-      );
+      Object.keys(formLocation).forEach((key) => listingForm.append(key, formLocation[key]));
       listingForm.append("guestCount", guestCount);
       listingForm.append("bedroomCount", bedroomCount);
       listingForm.append("bedCount", bedCount);
       listingForm.append("bathroomCount", bathroomCount);
       listingForm.append("amenities", JSON.stringify(amenities));
-      Object.keys(formDescription).forEach((key) =>
-        listingForm.append(key, formDescription[key])
-      );
-      photos.forEach((photo) => listingForm.append("listingPhotos", photo.file));
+      Object.keys(formDescription).forEach((key) => listingForm.append(key, formDescription[key]));
 
-      // Send token if your backend requires authorization
-      const token = user?.token; // adjust according to your Redux state
-      const response = await fetch("http://localhost:3001/properties/create", {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: listingForm,
+      photos.forEach((photo) => {
+        if (photo.file) listingForm.append("listingPhotos", photo.file);
+        if (photo.removePath) listingForm.append("removedPhotos", photo.removePath);
       });
 
-      if (response.ok) {
-        dispatch(
-          setLogin({
-            ...user,
-            isHost: true,
-          })
-        );
-        alert("Listing created successfully!");
-        navigate("/");
+      const token = localStorage.getItem("token"); // add your JWT token
+      const response = await axios.put(`http://localhost:3001/properties/${id}`, listingForm, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.status === 200) {
+        alert("Listing updated successfully!");
+        navigate("/host/dashboard");
       } else {
-        const data = await response.json();
-        alert("Failed to publish listing: " + (data.message || "Server error"));
+        alert("Failed to update listing");
       }
     } catch (err) {
-      console.error("Publish Listing failed", err);
-      alert("Failed to publish listing: " + err.message);
+      console.error("Update failed", err.response?.data || err.message);
+      alert("Failed to update listing: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -167,20 +193,20 @@ const CreateListing = () => {
     <>
       <Navbar />
       <div className="create-listing">
-        <h1>Publish Your Place</h1>
-        <form onSubmit={handlePost}>
+        <h1>Edit Your Place</h1>
+        <form onSubmit={handleSubmit}>
           {/* Step 1 */}
           <div className="create-listing_step1">
             <h2>Step 1: Tell us about your place</h2>
             <hr />
-            <h3>Which of these categories best describes your place?</h3>
+            <h3>Category</h3>
             <div className="category-list">
               {categories
-                .filter((item) => item.label !== "All")
-                .map((item, index) => (
+                .filter((c) => c.label !== "All")
+                .map((item, idx) => (
                   <div
+                    key={idx}
                     className={`category ${category === item.label ? "selected" : ""}`}
-                    key={index}
                     onClick={() => setCategory(item.label)}
                   >
                     <div className="category_icon">{item.icon}</div>
@@ -189,12 +215,12 @@ const CreateListing = () => {
                 ))}
             </div>
 
-            <h3>What type of place will guests have?</h3>
+            <h3>Type</h3>
             <div className="type-list">
-              {types?.map((item, index) => (
+              {types.map((item, idx) => (
                 <div
+                  key={idx}
                   className={`type ${type === item.name ? "selected" : ""}`}
-                  key={index}
                   onClick={() => setType(item.name)}
                 >
                   <div className="type_text">
@@ -206,7 +232,7 @@ const CreateListing = () => {
               ))}
             </div>
 
-            <h3>Where's your place located?</h3>
+            <h3>Location</h3>
             <div className="full">
               <div className="location">
                 <p>Street Address</p>
@@ -219,16 +245,10 @@ const CreateListing = () => {
                 />
               </div>
             </div>
-
             <div className="half">
               <div className="location">
-                <p>Apartment, Suite, etc.</p>
-                <input
-                  type="text"
-                  name="aptSuite"
-                  value={formLocation.aptSuite}
-                  onChange={handleChangeLocation}
-                />
+                <p>Apartment/Suite</p>
+                <input type="text" name="aptSuite" value={formLocation.aptSuite} onChange={handleChangeLocation} />
               </div>
               <div className="location">
                 <p>City</p>
@@ -241,7 +261,6 @@ const CreateListing = () => {
                 />
               </div>
             </div>
-
             <div className="half">
               <div className="location">
                 <p>Province</p>
@@ -265,71 +284,29 @@ const CreateListing = () => {
               </div>
             </div>
 
-            <h3>Share some basics about your place</h3>
+            <h3>Basics</h3>
             <div className="basics">
-              {/* Guests */}
-              <div className="basic">
-                <p>Guests</p>
-                <div className="basic_count">
-                  <RemoveCircleOutline
-                    onClick={() => guestCount > 1 && setGuestCount(guestCount - 1)}
-                    sx={{ fontSize: 25, cursor: "pointer", "&:hover": { color: variables.pinkred } }}
-                  />
-                  <p>{guestCount}</p>
-                  <AddCircleOutline
-                    onClick={() => setGuestCount(guestCount + 1)}
-                    sx={{ fontSize: 25, cursor: "pointer", "&:hover": { color: variables.pinkred } }}
-                  />
+              {[
+                { label: "Guests", value: guestCount, setter: setGuestCount },
+                { label: "Bedrooms", value: bedroomCount, setter: setBedroomCount },
+                { label: "Beds", value: bedCount, setter: setBedCount },
+                { label: "Bathrooms", value: bathroomCount, setter: setBathroomCount },
+              ].map((item, idx) => (
+                <div className="basic" key={idx}>
+                  <p>{item.label}</p>
+                  <div className="basic_count">
+                    <RemoveCircleOutline
+                      onClick={() => item.value > 1 && item.setter(item.value - 1)}
+                      sx={{ fontSize: 25, cursor: "pointer" }}
+                    />
+                    <p>{item.value}</p>
+                    <AddCircleOutline
+                      onClick={() => item.setter(item.value + 1)}
+                      sx={{ fontSize: 25, cursor: "pointer" }}
+                    />
+                  </div>
                 </div>
-              </div>
-
-              {/* Bedrooms */}
-              <div className="basic">
-                <p>Bedrooms</p>
-                <div className="basic_count">
-                  <RemoveCircleOutline
-                    onClick={() => bedroomCount > 1 && setBedroomCount(bedroomCount - 1)}
-                    sx={{ fontSize: 25, cursor: "pointer", "&:hover": { color: variables.pinkred } }}
-                  />
-                  <p>{bedroomCount}</p>
-                  <AddCircleOutline
-                    onClick={() => setBedroomCount(bedroomCount + 1)}
-                    sx={{ fontSize: 25, cursor: "pointer", "&:hover": { color: variables.pinkred } }}
-                  />
-                </div>
-              </div>
-
-              {/* Beds */}
-              <div className="basic">
-                <p>Beds</p>
-                <div className="basic_count">
-                  <RemoveCircleOutline
-                    onClick={() => bedCount > 1 && setBedCount(bedCount - 1)}
-                    sx={{ fontSize: 25, cursor: "pointer", "&:hover": { color: variables.pinkred } }}
-                  />
-                  <p>{bedCount}</p>
-                  <AddCircleOutline
-                    onClick={() => setBedCount(bedCount + 1)}
-                    sx={{ fontSize: 25, cursor: "pointer", "&:hover": { color: variables.pinkred } }}
-                  />
-                </div>
-              </div>
-
-              {/* Bathrooms */}
-              <div className="basic">
-                <p>Bathrooms</p>
-                <div className="basic_count">
-                  <RemoveCircleOutline
-                    onClick={() => bathroomCount > 1 && setBathroomCount(bathroomCount - 1)}
-                    sx={{ fontSize: 25, cursor: "pointer", "&:hover": { color: variables.pinkred } }}
-                  />
-                  <p>{bathroomCount}</p>
-                  <AddCircleOutline
-                    onClick={() => setBathroomCount(bathroomCount + 1)}
-                    sx={{ fontSize: 25, cursor: "pointer", "&:hover": { color: variables.pinkred } }}
-                  />
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -337,12 +314,12 @@ const CreateListing = () => {
           <div className="create-listing_step2">
             <h2>Step 2: Make your place stand out</h2>
             <hr />
-            <h3>Tell guests what your place has to offer</h3>
+            <h3>Amenities</h3>
             <div className="amenities">
-              {facilities.map((item, index) => (
+              {facilities.map((item, idx) => (
                 <div
+                  key={idx}
                   className={`facility ${amenities.includes(item.name) ? "selected" : ""}`}
-                  key={index}
                   onClick={() => handleSelectAmenities(item.name)}
                 >
                   <div className="facility_icon">{item.icon}</div>
@@ -351,21 +328,30 @@ const CreateListing = () => {
               ))}
             </div>
 
-            <h3>Add some photos of your place</h3>
+            <h3>Photos</h3>
             <DragDropContext onDragEnd={handleDragPhoto}>
               <Droppable droppableId="photos" direction="horizontal">
                 {(provided) => (
                   <div className="photos" {...provided.droppableProps} ref={provided.innerRef}>
-                    {photos.map((photo, index) => (
-                      <Draggable key={photo.id} draggableId={photo.id} index={index}>
+                    {existingPhotos.map((path, idx) => (
+                      <div key={idx} className="photo">
+                        <img src={getImageUrl(path)} alt="listing" />
+                        <button type="button" onClick={() => removeExistingPhoto(idx)}>
+                          <BiTrash />
+                        </button>
+                      </div>
+                    ))}
+
+                    {photos.map((photo, idx) => (
+                      <Draggable key={photo.id} draggableId={photo.id} index={idx}>
                         {(provided) => (
                           <div
-                            className="photo"
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
+                            className="photo"
                           >
-                            <img src={URL.createObjectURL(photo.file)} alt="place" />
+                            <img src={photo.file ? URL.createObjectURL(photo.file) : ""} alt="new" />
                             <button type="button" onClick={() => handleRemovePhoto(photo.id)}>
                               <BiTrash />
                             </button>
@@ -379,10 +365,13 @@ const CreateListing = () => {
                       type="file"
                       style={{ display: "none" }}
                       accept="image/*"
-                      onChange={handleUploadPhotos}
                       multiple
+                      onChange={handleUploadPhotos}
                     />
-                    <label htmlFor="image" className={photos.length < 1 ? "alone" : "together"}>
+                    <label
+                      htmlFor="image"
+                      className={photos.length + existingPhotos.length < 1 ? "alone" : "together"}
+                    >
                       <div className="icon">
                         <IoIosImages />
                       </div>
@@ -395,7 +384,7 @@ const CreateListing = () => {
               </Droppable>
             </DragDropContext>
 
-            <h3>What make your place attractive and exciting?</h3>
+            <h3>Description & Price</h3>
             <div className="description">
               <p>Title</p>
               <input
@@ -420,35 +409,34 @@ const CreateListing = () => {
                 onChange={handleChangeDescription}
                 required
               />
-              <p>Highlight details</p>
+              <p>Highlight Details</p>
               <textarea
                 name="highlightDesc"
                 value={formDescription.highlightDesc}
                 onChange={handleChangeDescription}
                 required
               />
-              <p>Now, set your PRICE</p>
+              <p>Price</p>
               <span>$</span>
               <input
                 type="number"
                 name="price"
                 value={formDescription.price}
                 onChange={handleChangeDescription}
-                className="price"
                 required
+                className="price"
               />
             </div>
           </div>
 
-          <button className="submit_btn" type="submit">
-            CREATE YOUR LISTING
+          <button type="submit" className="submit_btn">
+            Update Listing
           </button>
         </form>
       </div>
-
       <Footer />
     </>
   );
 };
 
-export default CreateListing;
+export default EditListing;
