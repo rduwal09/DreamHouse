@@ -10,7 +10,6 @@ import LoginPage from "./pages/LoginPage";
 import CreateListing from "./pages/CreateListing";
 import ListingDetails from "./pages/ListingDetails";
 import WishList from "./pages/WishList";
-// import PropertyList from "./pages/PropertyList";
 import ReservationList from "./pages/ReservationList";
 import CategoryPage from "./pages/CategoryPage";
 import SearchPage from "./pages/SearchPage";
@@ -20,6 +19,15 @@ import RequireAdminAuth from "./components/RequireAdminAuth";
 import AdminUsers from "./pages/admin/AdminUsers";
 import HostDashboard from "./pages/BookingsDashboard";
 import EditListing from "./pages/EditListing";
+import SuccessPage from "./pages/Successpage";
+import CancelPage from "./pages/CancelPage";
+
+// Stripe
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+
+// ✅ Replace with your real publishable key
+const stripePromise = loadStripe("pk_test_51S4PFX9Jg9dvYrBkhZREKU9DDCO7YvKgCNYp12EHj6z8dlTD1Ivr37btyNNEEqghEmaaIt93Fp6BqOjUK7TcUfuS00OGLxd6KY");
 
 function App() {
   const dispatch = useDispatch();
@@ -42,7 +50,7 @@ function App() {
     setLoadingUser(false);
   }, [dispatch]);
 
-  if (loadingUser) return null; // wait until user is loaded
+  if (loadingUser) return null;
 
   // Protected route wrapper
   const ProtectedRoute = ({ children }) => {
@@ -55,66 +63,77 @@ function App() {
   const RegisterRedirect = () => (!user ? <RegisterPage /> : <Navigate to="/" replace />);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginRedirect />} />
-        <Route path="/register" element={<RegisterRedirect />} />
-        <Route path="/properties/search" element={<SearchPage />} />
-        <Route path="/properties/category/:category" element={<CategoryPage />} />
-        <Route path="/properties/:listingId" element={<ListingDetails />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/:userId/reservations" element={<ReservationList/>} />
+    <Elements stripe={stripePromise}>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginRedirect />} />
+          <Route path="/register" element={<RegisterRedirect />} />
+          <Route path="/properties/search" element={<SearchPage />} />
+          <Route path="/properties/category/:category" element={<CategoryPage />} />
+          <Route path="/properties/:listingId" element={<ListingDetails />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/:userId/reservations" element={<ReservationList />} />
 
-        {/* Host Dashboard */}
-        <Route
-          path="/host/dashboard"
-          element={
-            <ProtectedRoute>
-              {user?.isHost ? <HostDashboard /> : <Navigate to="/" replace />}
-            </ProtectedRoute>
-          }
-        />
+          {/* Host Dashboard */}
+          <Route
+            path="/host/dashboard"
+            element={
+              <ProtectedRoute>
+                {user?.isHost ? <HostDashboard /> : <Navigate to="/" replace />}
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Edit Listing route - FIXED */}
-        <Route path="/edit-listing/:id" element={<EditListing />} />
+          {/* Edit Listing route */}
+          <Route path="/edit-listing/:id" element={<EditListing />} />
 
-        {/* Protected User Routes */}
-        <Route
-          path="/create-listing"
-          element={
-            <ProtectedRoute>
-              <CreateListing />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/:userId/wishList" element={<ProtectedRoute><WishList /></ProtectedRoute>} />
-        {/* <Route path="/:userId/properties" element={<ProtectedRoute><PropertyList /></ProtectedRoute>} /> */}
-        {/* <Route path="/:userId/reservations" element={<ProtectedRoute><ReservationList /></ProtectedRoute>} /> */}
+          {/* Protected User Routes */}
+          <Route
+            path="/create-listing"
+            element={
+              <ProtectedRoute>
+                <CreateListing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/:userId/wishList"
+            element={
+              <ProtectedRoute>
+                <WishList />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Admin Routes */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <RequireAdminAuth>
-              <AdminDashboard />
-            </RequireAdminAuth>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <RequireAdminAuth>
-              <AdminUsers />
-            </RequireAdminAuth>
-          }
-        />
+          {/* Admin Routes */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <RequireAdminAuth>
+                <AdminDashboard />
+              </RequireAdminAuth>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <RequireAdminAuth>
+                <AdminUsers />
+              </RequireAdminAuth>
+            }
+          />
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Stripe Payment Result Routes */}
+          <Route path="/success" element={<SuccessPage />} />
+          <Route path="/cancel" element={<CancelPage />} />
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </Elements>
   );
 }
 

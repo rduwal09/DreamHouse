@@ -28,11 +28,11 @@ const ListingCard = ({
   const user = useSelector((state) => state.user.user);
   const wishList = user?.wishList || [];
 
-  // Initialize liked state only once on mount
+  // ✅ Always sync liked state with Redux wishlist
   useEffect(() => {
-  const isLiked = wishList?.some((item) => item._id?.toString() === _id.toString());
-  setLiked(isLiked);
-}, [wishList, _id]);
+    const isLiked = wishList?.some((item) => item._id?.toString() === _id.toString());
+    setLiked(isLiked);
+  }, [wishList, _id]);
 
   const goToPrevSlide = (e) => {
     e.stopPropagation();
@@ -48,8 +48,6 @@ const ListingCard = ({
     e.stopPropagation();
     if (!user || creator._id === user._id) return;
 
-    setLiked((prev) => !prev); // optimistic UI
-
     try {
       const res = await fetch(`http://localhost:3001/users/${user._id}/${_id}`, {
         method: "PATCH",
@@ -61,7 +59,6 @@ const ListingCard = ({
       dispatch(setWishList(data.wishList));
     } catch (err) {
       console.error("Failed to update wishlist:", err);
-      setLiked((prev) => !prev); // revert on error
     }
   };
 
@@ -105,9 +102,8 @@ const ListingCard = ({
         disabled={!user}
         type="button"
       >
-        <Favorite sx={{ fontSize: 32, color: liked ? "red" : "white" }} />
+        <Favorite sx={{ fontSize: 32, color: liked ? "red" : "gray" }} />
       </button>
-
     </div>
   );
 };

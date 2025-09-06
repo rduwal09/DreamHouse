@@ -1,54 +1,34 @@
-// client/src/components/CheckoutButton.js
-import React, { useState } from "react";
+import { loadStripe } from "@stripe/stripe-js";
 
-export default function CheckoutButton({ items, bookingId, userId, propertyId }) {
-  const [loading, setLoading] = useState(false);
+const stripePromise = loadStripe("pk_test_XXXX"); // replace with your publishable key
 
+export default function CheckoutButton({ bookingId }) {
   const handleCheckout = async () => {
-    if (!items || items.length === 0) {
-      console.error("❌ No items passed to CheckoutButton");
-      return;
-    }
-
-    setLoading(true);
-
     try {
-      console.log("📤 Sending checkout request:", { items, bookingId, userId, propertyId });
-
-      const response = await fetch("http://localhost:3001/api/payment/create-checkout-session", {
+      const res = await fetch("http://localhost:3001/api/payment/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, bookingId, userId, propertyId }),
+        body: JSON.stringify({ bookingId }),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Server error ${response.status}: ${text}`);
-      }
-
-      const data = await response.json();
-      console.log("✅ Checkout session response:", data);
-
+      const data = await res.json();
       if (data.url) {
-        window.location.href = data.url; // 🚀 Redirect to Stripe
+        window.location.href = data.url; // redirect to Stripe checkout
       } else {
-        console.error("❌ No checkout URL returned:", data);
+        alert("Failed to start checkout");
       }
     } catch (err) {
-      console.error("❌ Checkout error:", err);
-      alert("Payment failed. Please try again.");
-    } finally {
-      setLoading(false);
+      console.error(err);
+      alert("Error starting checkout");
     }
   };
 
   return (
     <button
       onClick={handleCheckout}
-      disabled={loading}
-      className={`px-4 py-2 rounded text-white ${loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
+      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
     >
-      {loading ? "Redirecting..." : "Pay with Stripe"}
+      Pay with Stripe
     </button>
   );
 }

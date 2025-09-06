@@ -71,43 +71,44 @@ router.get("/:userId/properties", async (req, res) => {
   }
 });
 
-/* GET RESERVATION LIST */
-router.get("/:userId/reservations", async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Fetch bookings where the logged-in user is the tenant
-    const reservations = await Booking.find({ tenant: userId })
-      .populate("tenant")     // user who booked
-      .populate("landlord")   // host
-      .populate("listing");   // property details
-
-    res.status(200).json(reservations);
-  } catch (err) {
-    console.log(err);
-    res.status(404).json({ message: "Cannot find reservations!", error: err.message });
-  }
-});
-
-
-
-
-
-
-
-
-// // GET /users/:userId/reservations
+// /* GET RESERVATION LIST */
 // router.get("/:userId/reservations", async (req, res) => {
 //   try {
 //     const { userId } = req.params;
-//     const reservations = await Booking.find({ tenant: userId, status: "paid" }) // ✅ only paid
-//       .populate("listing")
-//       .populate("landlord");
-//     res.json(reservations);
+
+//     // Fetch bookings where the logged-in user is the tenant
+//     const reservations = await Booking.find({ tenant: userId })
+//       .populate("tenant")     // user who booked
+//       .populate("landlord")   // host
+//       .populate("listing");   // property details
+
+//     res.status(200).json(reservations);
 //   } catch (err) {
-//     res.status(500).json({ message: "Failed to fetch reservations" });
+//     console.log(err);
+//     res.status(404).json({ message: "Cannot find reservations!", error: err.message });
 //   }
 // });
+
+
+
+
+
+
+
+
+
+// GET /users/:userId/reservations
+router.get("/:userId/reservations", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const reservations = await Booking.find({ tenant: userId, status: "paid" }) 
+      .populate("listing")
+      .populate("landlord");
+    res.json(reservations);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch reservations" });
+  }
+});
 
 
 module.exports = router;
