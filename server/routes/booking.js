@@ -5,7 +5,6 @@ const Booking = require("../models/Booking");
 router.post("/create", async (req, res) => {
   try {
     const { tenant, landlord, listing, startDate, endDate, totalPrice } = req.body;
-
     if (!tenant || !landlord || !listing) {
       return res.status(400).json({ message: "Tenant, landlord, and listing are required" });
     }
@@ -14,8 +13,8 @@ router.post("/create", async (req, res) => {
       tenant,
       landlord,
       listing,
-      startDate,
-      endDate,
+      startDate: new Date(startDate),   // ✅ convert
+      endDate: new Date(endDate),       // ✅ convert
       totalPrice,
       status: "pending",
     });
@@ -27,6 +26,7 @@ router.post("/create", async (req, res) => {
     res.status(400).json({ message: "Failed to create booking request", error: err.message });
   }
 });
+
 
 /* REQUEST AGAIN (Tenant resubmits a rejected booking) */
 router.put("/:id/request-again", async (req, res) => {
@@ -42,8 +42,9 @@ router.put("/:id/request-again", async (req, res) => {
     }
 
     // Update booking details and reset status to pending
-    booking.startDate = startDate || booking.startDate;
-    booking.endDate = endDate || booking.endDate;
+    if (startDate) booking.startDate = new Date(startDate);
+    if (endDate) booking.endDate = new Date(endDate);
+
     booking.totalPrice = totalPrice || booking.totalPrice;
     booking.status = "pending";
 

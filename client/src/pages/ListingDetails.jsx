@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/ListingDetails.scss";
 import { useNavigate, useParams } from "react-router-dom";
 import { facilities } from "../data";
@@ -22,7 +22,6 @@ const getImageUrl = (path) => {
   const relativePath = path.replace(/^public[\\/]/, "");
   return `http://localhost:3001/${encodeURI(relativePath)}`;
 };
-
 const ListingDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,6 +32,8 @@ const ListingDetails = () => {
   const [comment, setComment] = useState("");
   const [rentalRequestStatus, setRentalRequestStatus] = useState(null);
   const [existingBookingId, setExistingBookingId] = useState(null);
+  const [existingBooking, setExistingBooking] = useState(null);
+
 
   const { listingId } = useParams();
   const navigate = useNavigate();
@@ -43,13 +44,22 @@ const ListingDetails = () => {
   ]);
 
   const handleSelect = (ranges) => setDateRange([ranges.selection]);
-  const dayCount = Math.max(
-    1,
-    Math.round(
-      (new Date(dateRange[0].endDate) - new Date(dateRange[0].startDate)) /
-        (1000 * 60 * 60 * 24)
+  const dayCount = existingBooking
+  ? Math.max(
+      1,
+      Math.round(
+        (new Date(existingBooking.endDate) - new Date(existingBooking.startDate)) /
+          (1000 * 60 * 60 * 24)
+      )
     )
-  );
+  : Math.max(
+      1,
+      Math.round(
+        (new Date(dateRange[0].endDate) - new Date(dateRange[0].startDate)) /
+          (1000 * 60 * 60 * 24)
+      )
+    );
+
 
   const isHost = String(listing?.creator?._id) === String(userId);
 
@@ -96,29 +106,32 @@ const ListingDetails = () => {
     };
 
     const fetchExistingRequest = async () => {
-      if (!userId) return;
-      try {
-        const res = await fetch(
-          `http://localhost:3001/bookings/?userId=${userId}&role=tenant`
-        );
-        if (res.ok) {
-          const bookings = await res.json();
+  if (!userId) return;
+  try {
+    const res = await fetch(
+      `http://localhost:3001/bookings/?userId=${userId}&role=tenant`
+    );
+    if (res.ok) {
+      const bookings = await res.json();
 
-          const booking = bookings.find(
-            (b) => String(b.listing._id) === String(listingId)
-          );
+      const booking = bookings.find(
+        (b) => String(b.listing._id) === String(listingId)
+      );
 
-          if (booking) {
-            setRentalRequestStatus(booking.status);
-            setExistingBookingId(booking._id);
-          } else {
-            setRentalRequestStatus(null);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch existing booking:", err);
+      if (booking) {
+        setRentalRequestStatus(booking.status);
+        setExistingBookingId(booking._id);
+        setExistingBooking(booking); // ✅ now dates will show correctly after reload
+      } else {
+        setRentalRequestStatus(null);
+        setExistingBooking(null);
       }
-    };
+    }
+  } catch (err) {
+    console.error("Failed to fetch existing booking:", err);
+  }
+};
+
 
     fetchListing();
     fetchReviews();
@@ -162,9 +175,11 @@ const ListingDetails = () => {
 
       if (res.ok) {
         const data = await res.json();
-        setRentalRequestStatus(data.status); // ✅ use backend status
+        setRentalRequestStatus(data.status); 
         setExistingBookingId(data._id);
+        setExistingBooking(data);  // ✅ save full booking object
         alert("Rental request submitted!");
+      
       } else {
         const error = await res.json();
         alert(error.message || "Failed to submit request");
@@ -310,16 +325,25 @@ const ListingDetails = () => {
             <div className="date-range-calendar">
               <DateRange ranges={dateRange} onChange={handleSelect} />
               <h2>
-                ${listing.price} x {dayCount}{" "}
-                {dayCount > 1 ? "nights" : "night"}
+                ${listing.price} x {dayCount} {dayCount > 1 ? "nights" : "night"}
               </h2>
               <h2>Total price: ${listing.price * dayCount}</h2>
-              <p>
-                Requested Start Date: {dateRange[0].startDate.toDateString()}
+
+             <p>
+                Requested Start Date:{" "}
+                {existingBooking
+                  ? new Date(existingBooking.startDate).toDateString()
+                  : dateRange[0].startDate.toDateString()}
               </p>
+
               <p>
-                Requested End Date: {dateRange[0].endDate.toDateString()}
+                Requested End Date:{" "}
+                {existingBooking
+                  ? new Date(existingBooking.endDate).toDateString()
+                  : dateRange[0].endDate.toDateString()}
               </p>
+
+
 
               {isHost ? (
                 <button className="button" disabled>
