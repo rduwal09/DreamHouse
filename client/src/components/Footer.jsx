@@ -1,18 +1,26 @@
-import "../styles/Footer.scss"
-import { LocationOn, LocalPhone, Email } from "@mui/icons-material"
+import "../styles/Footer.scss";
+import { LocationOn, LocalPhone, Email } from "@mui/icons-material";
+import { Link } from "react-router-dom"; // ✅ Import Link for navigation
+
 const Footer = () => {
   return (
     <div className="footer">
       <div className="footer_left">
-        <a href="/"><img src="/assets/logo.png" alt="logo" /></a>
+        <Link to="/"><img src="/assets/logo.png" alt="logo" /></Link>
       </div>
 
       <div className="footer_center">
         <h3>Useful Links</h3>
         <ul>
-          <li>About Us</li>
-          <li>Terms and Conditions</li>
-          <li>Return and Refund Policy</li>
+          <li>
+            <Link to="/about">About Us</Link> {/* ✅ Navigate to About.jsx */}
+          </li>
+          <li>
+            <Link to="/terms">Terms and Conditions</Link> {/* Optional route */}
+          </li>
+          <li>
+            <Link to="/refund">Return and Refund Policy</Link> {/* Optional route */}
+          </li>
         </ul>
       </div>
 
@@ -29,7 +37,7 @@ const Footer = () => {
         <img src="/assets/payment.png" alt="payment" />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Footer
+export default Footer;

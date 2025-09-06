@@ -4,6 +4,7 @@ const initialState = {
   user: null,
   token: null,
   listings: [],
+  wishlist: [],
 };
 
 export const userSlice = createSlice({
@@ -22,17 +23,24 @@ export const userSlice = createSlice({
     setListings: (state, action) => {
       state.listings = action.payload.listings || [];
     },
-    setTripList: (state, action) => {
-      if (state.user) state.user.tripList = action.payload;
-    },
     setWishList: (state, action) => {
-      if (state.user) state.user.wishList = action.payload;
+      state.wishList = action.payload; // <-- must update here
     },
     setPropertyList: (state, action) => {
-      if (state.user) state.user.propertyList = action.payload;
+      if (state.user) {
+        state.user = {
+          ...state.user,
+          propertyList: action.payload,
+        };
+      }
     },
     setReservationList: (state, action) => {
-      if (state.user) state.user.reservationList = action.payload;
+      if (state.user) {
+        state.user = {
+          ...state.user,
+          reservationList: action.payload,
+        };
+      }
     },
   },
 });
@@ -41,7 +49,6 @@ export const {
   setLogin,
   setLogout,
   setListings,
-  setTripList,
   setWishList,
   setPropertyList,
   setReservationList,

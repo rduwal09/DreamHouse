@@ -5,32 +5,45 @@
   cursor: pointer;
   padding: 10px;
   border-radius: 10px;
+  width: 300px;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
 
   &:hover {
     @include shadow;
   }
 
   .slider-container {
-    width: 300px;
+    width: 100%;
+    height: 250px;
     overflow: hidden;
     border-radius: 10px;
     margin-bottom: 10px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     .slider {
       display: flex;
+      width: 100%;
+      height: 100%;
       transition: transform 0.5s ease;
 
       .slide {
-        position: relative;
         flex: 0 0 100%;
         width: 100%;
-        height: 270px;
-        display: flex;
-        align-items: center;
+        height: 100%;
+        position: relative;
 
         img {
           width: 100%;
           height: 100%;
+          object-fit: cover;
+          display: block;
           filter: brightness(85%);
         }
 
@@ -47,45 +60,61 @@
           align-items: center;
           justify-content: center;
           background-color: rgba(255, 255, 255, 0.7);
-          z-index: 9999;
+          z-index: 10;
 
           &:hover {
             background-color: white;
           }
         }
 
-        .prev-button {
-          left: 10px;
-        }
-
-        .next-button {
-          right: 10px;
-        }
+        .prev-button { left: 10px; }
+        .next-button { right: 10px; }
       }
     }
   }
 
   h3 {
     font-size: 18px;
+    margin: 5px 0;
+    flex-shrink: 0;
   }
 
   p {
     font-size: 16px;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   span {
     font-weight: 700;
     font-size: 18px;
+    flex-shrink: 0;
   }
 
+  /* ❤️ Heart button - Airbnb style */
   .favorite {
     position: absolute;
-    right: 20px;
-    top: 20px;
+    top: 12px;
+    right: 12px;
     border: none;
-    font-size: 20px;
     cursor: pointer;
-    z-index: 999;
+    z-index: 20;
     background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      font-size: 32px;
+      opacity: 0.7;              /* slightly transparent by default */
+      transition: all 0.2s ease;
+    }
+
+    &:hover svg {
+      opacity: 1;                /* full white on hover */
+      transform: scale(1.15);
+    }
   }
 }

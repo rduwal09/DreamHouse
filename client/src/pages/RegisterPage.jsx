@@ -10,6 +10,7 @@ const RegisterPage = () => {
     password: "",
     confirmPassword: "",
     profileImage: null,
+    isHost: false, // new field
   });
 
   const [passwordMatch, setPasswordMatch] = useState(true);
@@ -24,10 +25,10 @@ const RegisterPage = () => {
   }, [formData.password, formData.confirmPassword]);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value, files, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: name === "profileImage" ? files[0] : value,
+      [name]: type === "checkbox" ? checked : name === "profileImage" ? files[0] : value,
     });
   };
 
@@ -61,9 +62,10 @@ const RegisterPage = () => {
   return (
     <div className="register">
       <div className="register_content">
-        <h1 className="brand"><img src="/assets/logo.png" alt="house" />DreamHouse</h1>
+        <h1 className="brand">
+          <img src="/assets/logo.png" alt="house" />DreamHouse
+        </h1>
         <form className="register_content_form" onSubmit={handleSubmit}>
-
           <input
             placeholder="First Name"
             name="firstName"
@@ -128,6 +130,18 @@ const RegisterPage = () => {
               style={{ maxWidth: "80px" }}
             />
           )}
+
+          {/* New checkbox to register as host */}
+          <div className="host-checkbox">
+            <input
+              type="checkbox"
+              name="isHost"
+              id="isHost"
+              checked={formData.isHost}
+              onChange={handleChange}
+            />
+            <label htmlFor="isHost">Register as a Host</label>
+          </div>
 
           <button type="submit" disabled={!passwordMatch}>
             REGISTER
