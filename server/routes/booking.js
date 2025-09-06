@@ -1,5 +1,4 @@
 const router = require("express").Router();
-const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 
 /* CREATE RENTAL REQUEST (Tenant) */
@@ -80,6 +79,28 @@ router.patch("/:id/status", async (req, res) => {
   }
 });
 
+// PUT /bookings/:id/mark-paid
+router.put("/:id/mark-paid", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const booking = await Booking.findByIdAndUpdate(
+      id,
+      { status: "paid", paymentStatus: "paid" },
+      { new: true }
+    );
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.json(booking);
+  } catch (err) {
+    console.error("Error marking booking paid:", err);
+    res.status(500).json({ message: "Failed to mark booking as paid" });
+  }
+});
+
 /* GET BOOKINGS (by role) */
 router.get("/", async (req, res) => {
   try {
@@ -92,13 +113,32 @@ router.get("/", async (req, res) => {
     const bookings = await Booking.find(filter)
       .populate("tenant", "firstName lastName profileImagePath")
       .populate("landlord", "firstName lastName email")
-      .populate("listing", "title");
+      .populate({
+        path: "listing",
+        select: "_id title", // always return _id + title
+      });
 
-    res.json(bookings);
+    // Normalize results (if listing is missing for any reason)
+    const normalized = bookings.map((b) => {
+      if (!b.listing) {
+        return {
+          ...b.toObject(),
+          listing: { _id: null, title: "Unknown Listing" },
+        };
+      }
+      return b;
+    });
+
+    res.json(normalized);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to fetch bookings", error: err.message });
+    console.error("Error fetching bookings:", err);
+    res.status(500).json({
+      message: "Failed to fetch bookings",
+      error: err.message,
+    });
   }
 });
+
+
 
 module.exports = router;

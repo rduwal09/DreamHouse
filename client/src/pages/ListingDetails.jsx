@@ -9,6 +9,12 @@ import Loader from "../components/Loader";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useSelector } from "react-redux";
+import { loadStripe } from "@stripe/stripe-js";
+
+// ✅ Initialize Stripe with your publishable key
+const stripePromise = loadStripe(
+  "pk_test_51S4PFX9Jg9dvYrBkhZREKU9DDCO7YvKgCNYp12EHj6z8dlTD1Ivr37btyNNEEqghEmaaIt93Fp6BqOjUK7TcUfuS00OGLxd6KY"
+);
 
 // ✅ Utility to handle image URLs consistently
 const getImageUrl = (path) => {
@@ -75,9 +81,14 @@ const ListingDetails = () => {
 
     const fetchAverage = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/reviews/${listingId}/average`);
+        const res = await fetch(
+          `http://localhost:3001/reviews/${listingId}/average`
+        );
         const data = await res.json();
-        setAverage({ averageRating: data.averageRating || 0, count: data.count || 0 });
+        setAverage({
+          averageRating: data.averageRating || 0,
+          count: data.count || 0,
+        });
       } catch (err) {
         console.error(err);
         setAverage({ averageRating: 0, count: 0 });
@@ -92,12 +103,16 @@ const ListingDetails = () => {
         );
         if (res.ok) {
           const bookings = await res.json();
+
           const booking = bookings.find(
             (b) => String(b.listing._id) === String(listingId)
           );
+
           if (booking) {
             setRentalRequestStatus(booking.status);
             setExistingBookingId(booking._id);
+          } else {
+            setRentalRequestStatus(null);
           }
         }
       } catch (err) {
@@ -115,53 +130,79 @@ const ListingDetails = () => {
   }, [listingId, userId]);
 
   const handleRentalRequest = async () => {
-  if (!listing || !userId || isHost) return;
+    if (!listing || !userId || isHost) return;
 
-  try {
-    const requestData = {
-      tenant: userId,
-      landlord: listing.creator._id,
-      listing: listingId,
-      startDate: dateRange[0].startDate.toISOString(),
-      endDate: dateRange[0].endDate.toISOString(),
-      totalPrice: listing.price * dayCount,
-    };
+    try {
+      const requestData = {
+        tenant: userId,
+        landlord: listing.creator._id,
+        listing: listingId,
+        startDate: dateRange[0].startDate.toISOString(),
+        endDate: dateRange[0].endDate.toISOString(),
+        totalPrice: listing.price * dayCount,
+      };
 
-    let res;
-    // If previous request was rejected, update it instead of creating a new one
-    if (rentalRequestStatus === "rejected" && existingBookingId) {
-      res = await fetch(
-        `http://localhost:3001/bookings/${existingBookingId}/request-again`,
-        {
-          method: "PUT",
+      let res;
+      if (rentalRequestStatus === "rejected" && existingBookingId) {
+        res = await fetch(
+          `http://localhost:3001/bookings/${existingBookingId}/request-again`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestData),
+          }
+        );
+      } else {
+        res = await fetch("http://localhost:3001/bookings/create", {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestData),
+        });
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        setRentalRequestStatus(data.status); // ✅ use backend status
+        setExistingBookingId(data._id);
+        alert("Rental request submitted!");
+      } else {
+        const error = await res.json();
+        alert(error.message || "Failed to submit request");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit request");
+    }
+  };
+
+  // ✅ Handle Stripe payment
+  const handlePayment = async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:3001/create-checkout-session",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: listing.price * dayCount,
+            bookingId: existingBookingId,
+          }),
         }
       );
-    } else {
-      res = await fetch("http://localhost:3001/bookings/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestData),
-      });
+
+      const { id } = await res.json();
+
+      const stripe = await stripePromise;
+      const result = await stripe.redirectToCheckout({ sessionId: id });
+
+      if (result.error) {
+        alert(result.error.message);
+      }
+    } catch (err) {
+      console.error("Payment error:", err);
+      alert("Failed to start payment");
     }
-
-    if (res.ok) {
-      const data = await res.json();
-      setRentalRequestStatus("pending");
-      setExistingBookingId(data._id);
-      alert("Rental request submitted!");
-    } else {
-      const error = await res.json();
-      alert(error.message || "Failed to submit request");
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Failed to submit request");
-  }
-};
-
-
+  };
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -191,8 +232,14 @@ const ListingDetails = () => {
   };
 
   if (loading) return <Loader />;
-  if (error) return <p style={{ textAlign: "center", marginTop: "2rem" }}>{error}</p>;
-  if (!listing) return <p style={{ textAlign: "center", marginTop: "2rem" }}>Property not found</p>;
+  if (error)
+    return <p style={{ textAlign: "center", marginTop: "2rem" }}>{error}</p>;
+  if (!listing)
+    return (
+      <p style={{ textAlign: "center", marginTop: "2rem" }}>
+        Property not found
+      </p>
+    );
 
   return (
     <>
@@ -209,16 +256,20 @@ const ListingDetails = () => {
         </div>
 
         <h2>
-          {listing.type} in {listing.city}, {listing.province}, {listing.country}
+          {listing.type} in {listing.city}, {listing.province},{" "}
+          {listing.country}
         </h2>
         <p>
-          {listing.guestCount} guests - {listing.bedroomCount} bedroom(s) - {listing.bedCount} bed(s) -{" "}
-          {listing.bathroomCount} bathroom(s)
+          {listing.guestCount} guests - {listing.bedroomCount} bedroom(s) -{" "}
+          {listing.bedCount} bed(s) - {listing.bathroomCount} bathroom(s)
         </p>
         <hr />
 
         <div className="profile">
-          <img src={getImageUrl(listing.creator?.profileImagePath)} alt="host" />
+          <img
+            src={getImageUrl(listing.creator?.profileImagePath)}
+            alt="host"
+          />
           <h3>
             Hosted by {listing.creator?.firstName} {listing.creator?.lastName}
           </h3>
@@ -241,12 +292,16 @@ const ListingDetails = () => {
           <div>
             <h2>What this place offers?</h2>
             <div className="amenities">
-              {listing.amenities?.[0]?.split(",").map((item, idx) => (
-                <div className="facility" key={idx}>
-                  <div className="facility_icon">{facilities.find((f) => f.name === item)?.icon}</div>
-                  <p>{item}</p>
-                </div>
-              ))}
+              {listing.amenities?.[0]
+                ?.split(",")
+                .map((item, idx) => (
+                  <div className="facility" key={idx}>
+                    <div className="facility_icon">
+                      {facilities.find((f) => f.name === item)?.icon}
+                    </div>
+                    <p>{item}</p>
+                  </div>
+                ))}
             </div>
           </div>
 
@@ -255,52 +310,60 @@ const ListingDetails = () => {
             <div className="date-range-calendar">
               <DateRange ranges={dateRange} onChange={handleSelect} />
               <h2>
-                ${listing.price} x {dayCount} {dayCount > 1 ? "nights" : "night"}
+                ${listing.price} x {dayCount}{" "}
+                {dayCount > 1 ? "nights" : "night"}
               </h2>
               <h2>Total price: ${listing.price * dayCount}</h2>
-              <p>Requested Start Date: {dateRange[0].startDate.toDateString()}</p>
-              <p>Requested End Date: {dateRange[0].endDate.toDateString()}</p>
+              <p>
+                Requested Start Date: {dateRange[0].startDate.toDateString()}
+              </p>
+              <p>
+                Requested End Date: {dateRange[0].endDate.toDateString()}
+              </p>
 
               {isHost ? (
+                <button className="button" disabled>
+                  Cannot Request Own Property
+                </button>
+              ) : rentalRequestStatus === "pending" ? (
+                <button className="button" disabled>
+                  Request Pending
+                </button>
+              ) : rentalRequestStatus === "approved" ? (
+                <>
                   <button className="button" disabled>
-                    Cannot Request Own Property
+                    Request Approved
                   </button>
-                ) : rentalRequestStatus === "pending" ? (
+                  <button
+                    className="button"
+                    style={{ marginLeft: "10px", backgroundColor: "#22c55e" }}
+                    onClick={handlePayment}
+                  >
+                    Pay Now
+                  </button>
+                </>
+              ) : rentalRequestStatus === "paid" ? (
+                <button className="button" disabled>
+                  ✅ Property Booked
+                </button>
+              ) : rentalRequestStatus === "rejected" ? (
+                <>
                   <button className="button" disabled>
-                    Request Pending
+                    Request Rejected
                   </button>
-                ) : rentalRequestStatus === "approved" ? (
-                  <>
-                    <button className="button" disabled>
-                      Request Approved
-                    </button>
-                    <button
-                      className="button"
-                      style={{ marginLeft: "10px", backgroundColor: "#22c55e" }}
-                      onClick={() => navigate(`/checkout/${existingBookingId}`)}
-                    >
-                      Pay Now
-                    </button>
-                  </>
-                ) : rentalRequestStatus === "rejected" ? (
-                  <>
-                    <button className="button" disabled>
-                      Request Rejected
-                    </button>
-                    <button
-                      className="button"
-                      style={{ marginLeft: "10px", backgroundColor: "#f97316" }}
-                      onClick={handleRentalRequest}
-                    >
-                      Request Again
-                    </button>
-                  </>
-                ) : (
-                  <button className="button" onClick={handleRentalRequest}>
-                    Request to Rent
+                  <button
+                    className="button"
+                    style={{ marginLeft: "10px", backgroundColor: "#f97316" }}
+                    onClick={handleRentalRequest}
+                  >
+                    Request Again
                   </button>
-                )}
-
+                </>
+              ) : (
+                <button className="button" onClick={handleRentalRequest}>
+                  Request to Rent
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -308,7 +371,8 @@ const ListingDetails = () => {
         <div className="reviews mt-8">
           <h2>Reviews</h2>
           <p>
-            ⭐ {average?.averageRating?.toFixed(1) || "0.0"} ({average?.count || 0} reviews)
+            ⭐ {average?.averageRating?.toFixed(1) || "0.0"} (
+            {average?.count || 0} reviews)
           </p>
 
           {!isHost && (
@@ -320,7 +384,11 @@ const ListingDetails = () => {
                     key={star}
                     className={`star ${rating >= star ? "filled" : ""}`}
                     onClick={() => setRating(star)}
-                    style={{ cursor: "pointer", fontSize: "1.5rem", color: rating >= star ? "#f59e0b" : "#ccc" }}
+                    style={{
+                      cursor: "pointer",
+                      fontSize: "1.5rem",
+                      color: rating >= star ? "#f59e0b" : "#ccc",
+                    }}
                   >
                     ★
                   </span>
@@ -339,7 +407,9 @@ const ListingDetails = () => {
           {reviews.length > 0 ? (
             reviews.map((r) => (
               <div key={r._id} className="review">
-                <p className="font-semibold">{r.user?.name || "Anonymous"}</p>
+                <p className="font-semibold">
+                  {r.user?.name || "Anonymous"}
+                </p>
                 <p>⭐ {r.rating}</p>
                 <p>{r.comment}</p>
               </div>
@@ -353,5 +423,5 @@ const ListingDetails = () => {
     </>
   );
 };
-
+//heheheheheh
 export default ListingDetails;
