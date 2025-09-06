@@ -75,22 +75,27 @@ const HostDashboard = () => {
   };
 
   // ✅ Delete a listing
-  const deleteListing = async (listingId) => {
-    if (!window.confirm("Are you sure you want to delete this listing?")) return;
+const deleteListing = async (listingId) => {
+  if (!window.confirm("Are you sure you want to delete this listing?")) return;
 
-    try {
-      await fetch(`http://localhost:5000/api/listings/${listingId}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ creator: user._id }),
-      });
-      alert("Listing deleted successfully");
-      fetchListings();
-    } catch (err) {
-      console.error("Failed to delete listing:", err);
-      alert("Failed to delete listing");
-    }
-  };
+  try {
+    await fetch(`http://localhost:3001/properties/${listingId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`, // needed for authMiddleware
+      },
+    });
+    alert("Listing deleted successfully");
+    fetchListings();
+  } catch (err) {
+    console.error("Failed to delete listing:", err);
+    alert("Failed to delete listing");
+  }
+};
+
+
+
 
   if (!user?.isHost)
     return <p>Access denied. Only hosts can view this page.</p>;
