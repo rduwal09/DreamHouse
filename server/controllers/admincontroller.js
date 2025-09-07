@@ -31,27 +31,34 @@ const loginAdmin = async (req, res) => {
 };
 
 // =================== DASHBOARD STATS ===================
+// Dashboard stats
 const getStats = async (req, res) => {
   try {
     const userCount = await User.countDocuments();
     const propertyCount = await Listing.countDocuments();
-    const bookingCount = await Booking.countDocuments();
 
+    // ✅ Only count bookings where payment was successful
+    const bookingCount = await Booking.countDocuments({ paymentStatus: "paid" });
+
+    // ✅ Revenue only from successful bookings
     const revenueResult = await Booking.aggregate([
+      { $match: { paymentStatus: "paid" } },
       { $group: { _id: null, total: { $sum: "$totalPrice" } } }
     ]);
+
     const revenue = revenueResult[0]?.total || 0;
 
     res.status(200).json({
       users: userCount,
-      properties: propertyCount,
+      listings: propertyCount,
       bookings: bookingCount,
       revenue
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch stats' });
+    res.status(500).json({ error: "Failed to fetch stats" });
   }
 };
+
 
 // =================== USERS ===================
 const getAllUsers = async (req, res) => {
@@ -93,14 +100,20 @@ const deleteUser = async (req, res) => {
 
 
 // =================== PROPERTIES ===================
+
 const getAllProperties = async (req, res) => {
   try {
-    const listings = await Listing.find().populate('creator', 'email');
-    res.status(200).json(listings);
+    const properties = await Listing.find()
+      .populate("creator", "firstName lastName email") // ✅ bring host details
+      .select("title price city host createdAt"); // ✅ only needed fields
+
+    res.status(200).json(properties);
   } catch (err) {
-    res.status(500).json({ message: 'Server error fetching properties' });
+    console.error("Error fetching properties:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // Delete Property
 const deleteProperty = async (req, res) => {
@@ -120,17 +133,24 @@ const deleteProperty = async (req, res) => {
 };
 
 // =================== BOOKINGS ===================
+
 const getAllBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find()
-      .populate('user', 'email')
-      .populate('listing', 'title');
+    const bookings = await Booking.find({ paymentStatus: "paid" }) // only paid bookings
+      .populate("tenant", "firstName lastName email")
+      .populate("landlord", "firstName lastName email")
+      .populate("listing", "title city price");
 
     res.status(200).json(bookings);
   } catch (err) {
-    res.status(500).json({ message: 'Server error fetching bookings' });
+    console.error("Error fetching bookings:", err);
+    res.status(500).json({ message: "Server error fetching bookings" });
   }
 };
+
+
+
+
 
 // Delete Booking
 const deleteBooking = async (req, res) => {
@@ -149,6 +169,21 @@ const deleteBooking = async (req, res) => {
   }
 };
 
+// Refund booking (change status)
+const refundBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    booking.paymentStatus = "refunded";
+    await booking.save();
+
+    res.status(200).json({ success: true, booking });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Failed to refund booking" });
+  }
+};
+
 module.exports = {
   loginAdmin,
   getStats,
@@ -157,5 +192,6 @@ module.exports = {
   getAllProperties,
   deleteProperty,
   getAllBookings,
-  deleteBooking
+  deleteBooking,
+  refundBooking,
 };

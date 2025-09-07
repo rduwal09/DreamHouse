@@ -21,6 +21,8 @@ import HostDashboard from "./pages/BookingsDashboard";
 import EditListing from "./pages/EditListing";
 import SuccessPage from "./pages/Successpage";
 import CancelPage from "./pages/CancelPage";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminProperties from "./pages/admin/AdminProperties";
 
 // Stripe
 import { Elements } from "@stripe/react-stripe-js";
@@ -121,6 +123,23 @@ function App() {
             element={
               <RequireAdminAuth>
                 <AdminUsers />
+              </RequireAdminAuth>
+            }
+          />
+           <Route
+            path="/admin/bookings"
+            element={
+              <RequireAdminAuth>
+                <AdminBookings />
+              </RequireAdminAuth>
+            }
+          />
+
+           <Route
+            path="/admin/properties"
+            element={
+              <RequireAdminAuth>
+                <AdminProperties />
               </RequireAdminAuth>
             }
           />
