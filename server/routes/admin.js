@@ -9,7 +9,8 @@ const {
   getAllProperties,
   deleteProperty,
   getAllBookings,
-  deleteBooking
+  deleteBooking,
+  refundBooking,
 } = require('../controllers/admincontroller');
 
 // Auth
@@ -58,5 +59,7 @@ router.delete('/properties/:id', adminAuth, deleteProperty);
 // Bookings
 router.get('/bookings', adminAuth, getAllBookings);
 router.delete('/bookings/:id', adminAuth, deleteBooking);
+router.patch('/bookings/:id/refund', adminAuth, refundBooking);
+
 
 module.exports = router;
