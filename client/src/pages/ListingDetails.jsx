@@ -33,6 +33,7 @@ const ListingDetails = () => {
   const [rentalRequestStatus, setRentalRequestStatus] = useState(null);
   const [existingBookingId, setExistingBookingId] = useState(null);
   const [existingBooking, setExistingBooking] = useState(null);
+  const [disabledDates, setDisabledDates] = useState([]);
 
 
   const { listingId } = useParams();
@@ -141,6 +142,44 @@ const ListingDetails = () => {
     intervalId = setInterval(fetchExistingRequest, 5000);
     return () => clearInterval(intervalId);
   }, [listingId, userId]);
+
+
+useEffect(() => {
+  const fetchDisabledDates = async () => {
+    try {
+      const res = await fetch(
+        `http://localhost:3001/bookings/disabled-dates/${listingId}`
+      );
+      if (res.ok) {
+        const bookings = await res.json();
+
+        let dates = [];
+        bookings.forEach(b => {
+          const start = new Date(b.startDate);
+          const end = new Date(b.endDate);
+
+          let current = new Date(start);
+          while (current <= end) {
+            dates.push(new Date(current));
+            current.setDate(current.getDate() + 1);
+          }
+        });
+
+        setDisabledDates(dates);
+      }
+    } catch (err) {
+      console.error("Failed to fetch disabled dates:", err);
+    }
+  };
+
+  fetchDisabledDates();
+}, [listingId]);
+
+
+
+
+
+
 
   const handleRentalRequest = async () => {
     if (!listing || !userId || isHost) return;
@@ -323,7 +362,12 @@ const ListingDetails = () => {
           <div>
             <h2>Rental</h2>
             <div className="date-range-calendar">
-              <DateRange ranges={dateRange} onChange={handleSelect} />
+              <DateRange
+                ranges={dateRange}
+                onChange={handleSelect}
+                disabledDates={disabledDates}     // booked days (red)
+                minDate={new Date(new Date().setHours(0, 0, 0, 0))} // block past dates
+              />
               <h2>
                 ${listing.price} x {dayCount} {dayCount > 1 ? "nights" : "night"}
               </h2>

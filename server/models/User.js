@@ -24,10 +24,12 @@ const UserSchema = new mongoose.Schema(
       default: "",
     },
   
-    wishList: {
-      type: Array,
-      default: [],
-    },
+    wishList: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Listing",
+  }
+],
     propertyList: {
       type: Array,
       default: [],
@@ -39,7 +41,8 @@ const UserSchema = new mongoose.Schema(
     isHost: {
       type: Boolean,
       default: false, // New field to identify hosts
-    },
+    }
+
   },
   { timestamps: true }
 );

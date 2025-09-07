@@ -4,7 +4,6 @@ const initialState = {
   user: null,
   token: null,
   listings: [],
-  wishlist: [],
 };
 
 export const userSlice = createSlice({
@@ -24,7 +23,11 @@ export const userSlice = createSlice({
       state.listings = action.payload.listings || [];
     },
     setWishList: (state, action) => {
-      state.wishList = action.payload; // <-- must update here
+      // ❌ This was probably only updating state.wishlist
+      // ✅ It should update the nested user.wishList
+      if (state.user) {
+        state.user.wishList = action.payload;
+      }
     },
     setPropertyList: (state, action) => {
       if (state.user) {
