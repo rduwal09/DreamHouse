@@ -1,29 +1,36 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import './Dashboard.scss';
-import Sidebar from '../../pages/admin/Sidebar';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import "./Dashboard.scss";
+import AdminLayout from "./AdminLayout";
 
 const Dashboard = () => {
-  const [stats, setStats] = useState({ users: 0, listings: 0, bookings: 0 });
+  const [stats, setStats] = useState({ users: 0, listings: 0, bookings: 0, revenue: 0 });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/admin/login';
+    localStorage.removeItem("adminToken"); // ✅ clear correct token
+    window.location.href = "/admin/login";
   };
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:3001/api/admin/stats', {
+        const token = localStorage.getItem("adminToken"); // ✅ use adminToken
+        if (!token) {
+          setError("Not authenticated");
+          setLoading(false);
+          return;
+        }
+
+        const res = await axios.get("http://localhost:3001/api/admin/stats", {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         setStats(res.data);
       } catch (err) {
-        console.error('Stats Error:', err);
-        setError('Failed to fetch dashboard stats');
+        console.error("❌ Stats Error:", err.response?.data || err.message);
+        setError("Failed to fetch dashboard stats");
       } finally {
         setLoading(false);
       }
@@ -33,12 +40,11 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="admin-container">
-      <Sidebar />
+    <AdminLayout>
       <div className="dashboard">
         <div className="dashboard-header">
           <h1>Admin Dashboard</h1>
-          <button onClick={handleLogout}>Logout</button>
+          <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </div>
 
         {loading ? (
@@ -59,10 +65,14 @@ const Dashboard = () => {
               <h3>Total Bookings</h3>
               <p>{stats.bookings}</p>
             </div>
+            <div className="card">
+              <h3>Total Revenue</h3>
+              <p>${stats.revenue}</p>
+            </div>
           </div>
         )}
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

@@ -1,0 +1,47 @@
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  background: #1f2937; // Dark gray
+  color: #fff;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 30px;
+    text-align: center;
+    color: #fbbf24; // amber-400 for highlight
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+
+    li {
+      margin: 15px 0;
+
+      a {
+        display: block;
+        text-decoration: none;
+        color: #cbd5e1; // gray-300
+        padding: 10px 15px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: #374151; // hover gray
+          color: #f9fafb; // white
+        }
+
+        &.active {
+          background: #fbbf24; // amber active
+          color: #1f2937; // dark text
+          font-weight: bold;
+        }
+      }
+    }
+  }
+}

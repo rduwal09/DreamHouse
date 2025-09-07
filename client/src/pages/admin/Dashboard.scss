@@ -1,65 +1,95 @@
 .admin-container {
   display: flex;
-  min-height: 100vh;
 }
 
 .dashboard {
   flex: 1;
-  padding: 2rem;
-  background: #f8f9fa;
+  padding: 20px;
+  margin-left: 220px; // Sidebar width
+  background: #f5f7fa;
+  min-height: 100vh;
+}
 
-  .dashboard-header {
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+
+  h1 {
+    font-size: 28px;
+    font-weight: bold;
+  }
+
+  .logout-btn {
+    background: #e53935;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 6px;
+    transition: background 0.3s;
 
-    button {
-      background: #e74c3c;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      cursor: pointer;
-
-      &:hover {
-        background: #c0392b;
-      }
+    &:hover {
+      background: #c62828;
     }
   }
+}
 
-  .stats {
-    display: flex;
-    gap: 2rem;
-    margin-top: 2rem;
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
 
-    .card {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      flex: 1;
-      text-align: center;
+.card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 
-      h3 {
-        margin-bottom: 0.5rem;
-      }
+  h3 {
+    margin: 10px 0;
+    font-size: 18px;
+    color: #444;
+  }
 
-      p {
-        font-size: 1.8rem;
-        font-weight: bold;
-        color: #2c3e50;
-      }
+  p {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 5px;
+  }
+
+  .icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+
+    &.users {
+      color: #1976d2;
+    }
+    &.listings {
+      color: #43a047;
+    }
+    &.bookings {
+      color: #f57c00;
+    }
+    &.revenue {
+      color: #d32f2f;
     }
   }
+}
 
-  .loading,
-  .error {
-    margin-top: 2rem;
-    font-size: 1.2rem;
-    color: #666;
-  }
+.loading,
+.error {
+  font-size: 18px;
+  margin-top: 20px;
+  text-align: center;
+}
 
-  .error {
-    color: #e74c3c;
-  }
+.error {
+  color: red;
 }
