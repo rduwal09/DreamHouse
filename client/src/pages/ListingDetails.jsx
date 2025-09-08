@@ -10,6 +10,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useSelector } from "react-redux";
 import { loadStripe } from "@stripe/stripe-js";
+import toast from "react-hot-toast";
+
 
 // ✅ Initialize Stripe with your publishable key
 const stripePromise = loadStripe(
@@ -217,15 +219,15 @@ useEffect(() => {
         setRentalRequestStatus(data.status); 
         setExistingBookingId(data._id);
         setExistingBooking(data);  // ✅ save full booking object
-        alert("Rental request submitted!");
+        toast.success("Rental request submitted!");
       
       } else {
         const error = await res.json();
-        alert(error.message || "Failed to submit request");
+        toast.eroor( "Failed to submit request");
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to submit request");
+      toast.error("Failed to submit request");
     }
   };
 
@@ -277,11 +279,11 @@ useEffect(() => {
         setComment("");
       } else {
         const error = await res.json();
-        alert(error.message || "Failed to submit review");
+        toast.error("Failed to submit review");
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to submit review");
+      toast.error("Failed to submit review");
     }
   };
 

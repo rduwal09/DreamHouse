@@ -11,6 +11,8 @@ import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
+import toast from "react-hot-toast";
+
 
 // Utility function to resolve image URLs correctly
 const getImageUrl = (path) => {
@@ -148,7 +150,7 @@ const EditListing = () => {
       !formDescription.highlightDesc ||
       formDescription.price <= 0
     ) {
-      alert("Please fill all required fields!");
+      toast.error("Please fill all required fields!");
       return;
     }
 
@@ -178,14 +180,14 @@ const EditListing = () => {
       });
 
       if (response.status === 200) {
-        alert("Listing updated successfully!");
+        toast.success("Listing updated successfully!");
         navigate("/host/dashboard");
       } else {
-        alert("Failed to update listing");
+        toast.error("Failed to update listing");
       }
     } catch (err) {
       console.error("Update failed", err.response?.data || err.message);
-      alert("Failed to update listing: " + (err.response?.data?.message || err.message));
+      toast.error("Failed to update listing: " + (err.response?.data?.message || err.message));
     }
   };
 

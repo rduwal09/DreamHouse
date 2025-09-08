@@ -36,7 +36,7 @@ const Navbar = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     setDropdownMenu(false);
-    navigate("/login", { replace: true });
+    navigate("/");
   };
 
   useEffect(() => {

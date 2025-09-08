@@ -54,7 +54,11 @@
     margin: 20px 0;
 
     img {
-      max-width: 280px;
+      width: 100%;             /* ✅ scale image inside container */
+      max-width: 280px;        /* ✅ keep them same width */
+      height: 200px;           /* ✅ uniform height */
+      object-fit: cover;       /* ✅ crop instead of stretch */
+      border-radius: 8px; 
     }
   }
 

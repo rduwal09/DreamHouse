@@ -8,6 +8,7 @@ const AdminBookings = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
+  // Fetch bookings on mount
   useEffect(() => {
     const fetchBookings = async () => {
       try {
@@ -23,6 +24,7 @@ const AdminBookings = () => {
     fetchBookings();
   }, []);
 
+  // Delete booking
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this booking?")) return;
     try {
@@ -36,6 +38,35 @@ const AdminBookings = () => {
     }
   };
 
+//   // Refund booking
+//  const handleRefund = async (id) => {
+//   if (!window.confirm("Are you sure you want to refund this booking?")) return;
+
+//   try {
+//     const token = localStorage.getItem("adminToken");
+//     const res = await axios.patch(
+//       `http://localhost:3001/api/admin/bookings/${id}/refund`,
+//       {},
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     // Update local state
+//     setBookings((prev) =>
+//       prev.map((b) =>
+//         b._id === id ? { ...b, paymentStatus: "refunded" } : b
+//       )
+//     );
+
+//     alert("✅ Refund successful via Stripe!");
+//     console.log(res.data);
+//   } catch (err) {
+//     console.error("Refund error:", err.message);
+//     alert("❌ Refund failed");
+//   }
+// };
+
+
+  // Filtered bookings
   const filtered = bookings.filter((b) => {
     const matchesSearch =
       b.tenant?.email?.toLowerCase().includes(search.toLowerCase()) ||
@@ -98,15 +129,18 @@ const AdminBookings = () => {
                   <td>{b.listing?.title || "N/A"}</td>
                   <td>{b.landlord?.email || "N/A"}</td>
                   <td>{b.listing?.city || "N/A"}</td>
-                  <td><span className="date-badge">{new Date(b.startDate).toLocaleDateString()}</span></td>
-                  <td><span className="date-badge">{new Date(b.endDate).toLocaleDateString()}</span></td>
-
+                  <td>
+                    <span className="date-badge">
+                      {new Date(b.startDate).toLocaleDateString()}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="date-badge">
+                      {new Date(b.endDate).toLocaleDateString()}
+                    </span>
+                  </td>
                   <td>${b.totalPrice || "0"}</td>
-                  <td
-                    className={`status ${
-                      b.paymentStatus === "paid" ? "paid" : "unpaid"
-                    }`}
-                  >
+                  <td className={`status ${b.paymentStatus}`}>
                     {b.paymentStatus}
                   </td>
                   <td>{new Date(b.createdAt).toLocaleDateString()}</td>
@@ -117,6 +151,14 @@ const AdminBookings = () => {
                     >
                       Delete
                     </button>
+                    {/* {b.paymentStatus === "paid" && (
+                      <button
+                        className="refund-btn"
+                        onClick={() => handleRefund(b._id)}
+                      >
+                        Refund
+                      </button>
+                    )} */}
                   </td>
                 </tr>
               ))

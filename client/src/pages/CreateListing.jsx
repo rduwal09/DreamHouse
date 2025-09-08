@@ -13,19 +13,25 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
 import { v4 as uuidv4 } from "uuid";
 import { setLogin } from "../redux/state";
+import toast from "react-hot-toast";
+
 
 const CreateListing = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.user); // current logged-in user
 
-  // 1️⃣ Redirect logged-out users
+  // Redux state
+  const user = useSelector((state) => state.user);
+  const token = useSelector((state) => state.token);
+
+  // Redirect if not logged in
   useEffect(() => {
     if (!user || !user._id) {
       navigate("/login");
     }
   }, [user, navigate]);
 
+  // States
   const [category, setCategory] = useState("");
   const [type, setType] = useState("");
 
@@ -90,12 +96,12 @@ const CreateListing = () => {
     setFormDescription({ ...formDescription, [name]: value });
   };
 
-  // 2️⃣ Updated handlePost with auth check & token
+  // Submit handler
   const handlePost = async (e) => {
     e.preventDefault();
 
-    if (!user || !user._id) {
-      alert("You must be logged in to create a listing!");
+    if (!user || !user._id || !token) {
+      toast.error("You must be logged in to create a listing!");
       navigate("/login");
       return;
     }
@@ -114,13 +120,12 @@ const CreateListing = () => {
       !formDescription.highlightDesc ||
       formDescription.price <= 0
     ) {
-      alert("Please fill up all information!");
+      toast.error("Please fill up all information!");
       return;
     }
 
     try {
       const listingForm = new FormData();
-      listingForm.append("creator", user._id);
       listingForm.append("category", category);
       listingForm.append("type", type);
       Object.keys(formLocation).forEach((key) =>
@@ -136,30 +141,30 @@ const CreateListing = () => {
       );
       photos.forEach((photo) => listingForm.append("listingPhotos", photo.file));
 
-      // Send token if your backend requires authorization
-      const token = user?.token; // adjust according to your Redux state
       const response = await fetch("http://localhost:3001/properties/create", {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: listingForm,
       });
 
       if (response.ok) {
         dispatch(
           setLogin({
-            ...user,
-            isHost: true,
+            user: { ...user, isHost: true },
+            token,
           })
         );
-        alert("Listing created successfully!");
+        toast.error("Listing created successfully!");
         navigate("/");
       } else {
         const data = await response.json();
-        alert("Failed to publish listing: " + (data.message || "Server error"));
+        toast.error("Failed to publish listing: " + (data.message || "Server error"));
       }
     } catch (err) {
       console.error("Publish Listing failed", err);
-      alert("Failed to publish listing: " + err.message);
+      toast.error("Failed to publish listing: " + err.message);
     }
   };
 
@@ -169,7 +174,7 @@ const CreateListing = () => {
       <div className="create-listing">
         <h1>Publish Your Place</h1>
         <form onSubmit={handlePost}>
-          {/* Step 1 */}
+          {/* --- Step 1 --- */}
           <div className="create-listing_step1">
             <h2>Step 1: Tell us about your place</h2>
             <hr />
@@ -333,7 +338,7 @@ const CreateListing = () => {
             </div>
           </div>
 
-          {/* Step 2 */}
+          {/* --- Step 2 --- */}
           <div className="create-listing_step2">
             <h2>Step 2: Make your place stand out</h2>
             <hr />

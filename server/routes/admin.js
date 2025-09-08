@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const adminAuth = require('../middleware/adminAuth');
+const Booking = require("../models/Booking");
+
+// const stripe = require("stripe")(process.env.STRIPE_SECRET);
+
+
 const {
   loginAdmin,
   getStats,
@@ -50,6 +55,47 @@ router.patch('/users/:id/toggle-host', adminAuth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
+
+router.patch("/bookings/:bookingId/refund", async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const booking = await Booking.findByIdAndUpdate(
+      bookingId,
+      { paymentStatus: "refunded" },
+      { new: true }
+    )
+      .populate("tenant", "name email")
+      .populate("landlord", "name email")
+      .populate("listing", "title city price");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.json({ message: "Booking refunded successfully", booking });
+  } catch (error) {
+    res.status(500).json({ message: "Error processing refund", error });
+  }
+});
+
+// Property requests (just display bookings)
+router.get("/property-requests", async (req, res) => {
+  try {
+    const requests = await Booking.find()
+      .populate("tenant", "firstname lastname email")
+      .populate("landlord", "firstname lastname email")
+      .populate("listing", "title city");
+
+    res.json(requests);
+  } catch (err) {
+    console.error("❌ Error fetching property requests:", err);
+    res.status(500).json({ error: "Failed to fetch property requests" });
+  }
+});
+
+
 
 
 // Properties

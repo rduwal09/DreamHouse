@@ -58,9 +58,9 @@ const AdminProperties = () => {
           <thead>
             <tr>
               <th>#</th>
-              <th>Title</th>
+              <th>Property</th>
               <th>Owner</th>
-              <th>Location</th>
+              <th>City</th>
               <th>Price</th>
               <th>Date Added</th>
               <th>Actions</th>

@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { setLogin } from "./redux/state";
+import { Toaster } from "react-hot-toast";
+
 
 import "./App.css";
 import HomePage from "./pages/HomePage";
@@ -23,6 +25,7 @@ import SuccessPage from "./pages/Successpage";
 import CancelPage from "./pages/CancelPage";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminProperties from "./pages/admin/AdminProperties";
+import PropertyRequests from "./pages/admin/PropertyRequests";
 
 // Stripe
 import { Elements } from "@stripe/react-stripe-js";
@@ -143,6 +146,15 @@ function App() {
               </RequireAdminAuth>
             }
           />
+          <Route
+            path="/admin/property-requests"
+            element={
+              <RequireAdminAuth>
+                <PropertyRequests/>
+              </RequireAdminAuth>
+            }
+          />
+
 
           {/* Stripe Payment Result Routes */}
           <Route path="/success" element={<SuccessPage />} />
@@ -151,6 +163,26 @@ function App() {
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
+
+            <Toaster
+        position="top-right"
+        toastOptions={{
+          success: {
+            style: {
+              background: "#d1fae5",
+              color: "#065f46",
+            },
+          },
+          error: {
+            style: {
+              background: "#fee2e2",
+              color: "#991b1b",
+            },
+          },
+        }}
+      />
+
       </BrowserRouter>
     </Elements>
   );
