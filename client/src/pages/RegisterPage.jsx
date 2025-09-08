@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Register.scss";
+import toast from "react-hot-toast";
+
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -47,15 +49,14 @@ const RegisterPage = () => {
       });
 
       if (response.ok) {
-        alert("Registration successful!");
+        toast.success("Registration successful!");
         navigate("/login"); // redirect after successful registration
       } else {
-        const data = await response.json();
-        alert(data.message || "Registration failed. Try again.");
+        toast.error("Registration failed. Try again.");
       }
     } catch (err) {
-      console.error("Registration failed", err.message);
-      alert("Registration failed. Please try again later.");
+      toast.error("Registration failed", err.message);
+      toast.error("Registration failed. Please try again later.");
     }
   };
 

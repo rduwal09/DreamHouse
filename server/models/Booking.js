@@ -38,6 +38,7 @@ const BookingSchema = new mongoose.Schema(
       type: String, // store Stripe/PayPal/eSewa payment ID
       default: null,
     },
+
     paymentStatus: {
       type: String,
       enum: ["unpaid", "paid", "failed", "refunded"],

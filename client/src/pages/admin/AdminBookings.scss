@@ -111,18 +111,36 @@
     }
   }
 
-  .delete-btn {
+  td:last-child {
+    display: flex;
+    gap: 8px;
+  }
+
+  .delete-btn,
+  .refund-btn {
     padding: 6px 12px;
     border: none;
-    background: #e74c3c;
-    color: #fff;
-    font-weight: 600;
     border-radius: 6px;
+    font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
+  }
+
+  .delete-btn {
+    background: #e74c3c;
+    color: #fff;
 
     &:hover {
       background: #c0392b;
+    }
+  }
+
+  .refund-btn {
+    background: #f39c12;
+    color: #fff;
+
+    &:hover {
+      background: #d68910;
     }
   }
 }

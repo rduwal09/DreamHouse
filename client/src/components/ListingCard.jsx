@@ -23,16 +23,20 @@ const ListingCard = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [liked, setLiked] = useState(false);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.user.user);
-  const token = useSelector((state) => state.user.token);
+
+  // ✅ Always guard with `?.` so it won't crash after logout
+  const user = useSelector((state) => state.user?.user || null);
+  const token = useSelector((state) => state.user?.token || null);
   const wishList = user?.wishList || [];
 
   // ✅ Sync local `liked` with Redux
   useEffect(() => {
+    if (!_id) return;
     const isLiked = wishList?.some(
-      (item) => item._id?.toString() === _id.toString()
+      (item) => item?._id?.toString() === _id?.toString()
     );
     setLiked(isLiked);
   }, [wishList, _id]);
@@ -52,31 +56,30 @@ const ListingCard = ({
   const patchWishList = async (e) => {
     e.stopPropagation();
 
-    if (!user) {
+    if (!user || !user._id) {
       console.log("❌ No user logged in, cannot toggle wishlist");
       return;
     }
-    if (creator._id === user._id) {
+    if (creator?._id === user?._id) {
       console.log("❌ Cannot wishlist your own property");
       return;
     }
 
     try {
-      console.log("📡 Sending PATCH to:", `http://localhost:3001/users/${user._id}/${_id}`);
-
-      const res = await fetch(`http://localhost:3001/users/${user._id}/${_id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-      });
+      const res = await fetch(
+        `http://localhost:3001/users/${user._id}/${_id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to update wishlist");
       const data = await res.json();
-
-      console.log("📥 Response from backend:", data);
-      dispatch(setWishList(data.wishList));
+      dispatch(setWishList(data?.wishList || []));
     } catch (err) {
       console.error("❌ Error updating wishlist:", err);
     }
@@ -87,6 +90,7 @@ const ListingCard = ({
       className="listing-card"
       onClick={() => navigate(`/properties/${_id}`)}
     >
+      {/* Slider */}
       <div className="slider-container">
         <div
           className="slider"
