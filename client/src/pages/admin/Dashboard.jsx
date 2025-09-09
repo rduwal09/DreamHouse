@@ -3,6 +3,9 @@ import axios from "axios";
 import { Users, Home, CalendarCheck, DollarSign } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import "./Dashboard.scss"; // ✅ Import SCSS
+import DashboardCharts from "./Charts/DashboardCharts";
+
+
 
 const Dashboard = () => {
   const [stats, setStats] = useState({ users: 0, listings: 0, bookings: 0, revenue: 0 });
@@ -95,6 +98,8 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+        <DashboardCharts />
       </div>
     </AdminLayout>
   );
