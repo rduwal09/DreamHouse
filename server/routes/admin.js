@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const adminAuth = require('../middleware/adminAuth');
 const Booking = require("../models/Booking");
+const User = require("../models/User");
 
 // const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
@@ -106,6 +107,92 @@ router.delete('/properties/:id', adminAuth, deleteProperty);
 router.get('/bookings', adminAuth, getAllBookings);
 router.delete('/bookings/:id', adminAuth, deleteBooking);
 router.patch('/bookings/:id/refund', adminAuth, refundBooking);
+
+// 📊 Users Growth per Week
+router.get("/analytics/users-growth", async (req, res) => {
+  try {
+    const users = await User.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            week: { $week: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.week": 1 } }
+    ]);
+
+    const formatted = users.map(u => ({
+      week: `W${u._id.week} ${u._id.year}`, // Example: "W36 2025"
+      users: u.count
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch users growth weekly", error: err.message });
+  }
+});
+
+
+// 📊 Bookings per Week
+router.get("/analytics/bookings", async (req, res) => {
+  try {
+    const bookings = await Booking.aggregate([
+      { $match: { status: "paid" } },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            week: { $week: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.week": 1 } }
+    ]);
+
+    const formatted = bookings.map(b => ({
+      week: `W${b._id.week} ${b._id.year}`,
+      bookings: b.count
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch bookings weekly", error: err.message });
+  }
+});
+
+
+// 📊 Revenue per Week
+router.get("/analytics/revenue", async (req, res) => {
+  try {
+    const revenue = await Booking.aggregate([
+      { $match: { paymentStatus: "paid" } }, 
+      {
+        
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            week: { $week: "$createdAt" }
+          },
+          total: { $sum: "$totalPrice" }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.week": 1 } }
+    ]);
+
+    const formatted = revenue.map(r => ({
+      week: `W${r._id.week} ${r._id.year}`,
+      revenue: r.total
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch revenue weekly", error: err.message });
+  }
+});
 
 
 module.exports = router;
