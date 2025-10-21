@@ -1,9 +1,11 @@
+// redux/state.js
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   user: null,
   token: null,
   listings: [],
+  wishList: [], // ✅ Keep this top-level for easy access
 };
 
 export const userSlice = createSlice({
@@ -13,21 +15,19 @@ export const userSlice = createSlice({
     setLogin: (state, action) => {
       state.user = action.payload.user;
       state.token = action.payload.token;
+      state.wishList = action.payload.user?.wishList || []; 
     },
     setLogout: (state) => {
       state.user = null;
       state.token = null;
       state.listings = [];
+      state.wishList = []; // ✅ reset
     },
     setListings: (state, action) => {
       state.listings = action.payload.listings || [];
     },
     setWishList: (state, action) => {
-      // ❌ This was probably only updating state.wishlist
-      // ✅ It should update the nested user.wishList
-      if (state.user) {
-        state.user.wishList = action.payload;
-      }
+      state.wishList = action.payload || []; // ✅ easy global update
     },
     setPropertyList: (state, action) => {
       if (state.user) {

@@ -5,23 +5,26 @@ const Booking = require("../models/Booking");
 const User = require("../models/User");
 const Listing = require("../models/Listing");
 
-// routes/user.js (or wishlist route)
-router.patch("/:userId/:listingId", async (req, res) => {
+// PATCH - toggle listing in wishlist
+router.patch("/:userId/wishlist/:listingId", async (req, res) => {
   try {
     const { userId, listingId } = req.params;
     const user = await User.findById(userId);
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    // toggle wishlist
-    if (user.wishlist.includes(listingId)) {
-      user.wishlist = user.wishlist.filter((id) => id.toString() !== listingId);
+    const index = user.wishList.indexOf(listingId);
+    if (index === -1) {
+      user.wishList.push(listingId);
     } else {
-      user.wishlist.push(listingId);
+      user.wishList.splice(index, 1);
     }
 
     await user.save();
-    res.status(200).json(user.wishlist);
+
+    // ✅ populate listings for frontend display
+    const updatedUser = await User.findById(userId).populate("wishList");
+    res.status(200).json({ wishList: updatedUser.wishList });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -29,18 +32,16 @@ router.patch("/:userId/:listingId", async (req, res) => {
 
 
 
-// ✅ GET - fetch user's wishlist (fully populated)
+
+// ✅ GET wishlist (populated listings)
 router.get("/:userId/wishlist", async (req, res) => {
   try {
-    const { userId } = req.params;
-
-    const user = await User.findById(userId).populate("wishList");
+    const user = await User.findById(req.params.userId).populate("wishList");
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    return res.status(200).json({ wishList: user.wishList });
+    res.status(200).json({ wishList: user.wishList });
   } catch (err) {
-    console.error("Error fetching wishlist:", err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ message: err.message });
   }
 });
 

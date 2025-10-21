@@ -1,3 +1,4 @@
+// redux/store.js
 import { configureStore } from "@reduxjs/toolkit";
 import {
   persistStore,
@@ -10,16 +11,19 @@ import {
   REGISTER,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
-import state from "./state";
+import userReducer from "./state"; // ✅ rename import for clarity
 
+// Persist configuration
 const persistConfig = {
   key: "root",
   version: 1,
   storage,
 };
 
-const persistedReducer = persistReducer(persistConfig, state);
+// Wrap reducer with persist
+const persistedReducer = persistReducer(persistConfig, userReducer);
 
+// Create store
 export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
@@ -30,6 +34,5 @@ export const store = configureStore({
     }),
 });
 
+// Create persistor
 export const persistor = persistStore(store);
-
-

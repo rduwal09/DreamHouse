@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -8,46 +8,64 @@ import "../styles/List.scss";
 
 const WishList = () => {
   const dispatch = useDispatch();
+  const user = useSelector((state) => state.user?.user || state.user);
+  const token = useSelector((state) => state.user?.token || state.token);
+  const wishList = useSelector((state) => state.wishList);
 
-  // ✅ Read wishlist from Redux state
-  const user = useSelector((state) => state.user.user);
-  const wishList = useSelector((state) => state.user.wishList) || [];
+  const [loading, setLoading] = useState(true);
 
-  // Fetch wishlist from backend on page load
   useEffect(() => {
     const fetchWishlist = async () => {
-      if (!user?._id) return;
+      if (!user?._id) {
+        console.warn("⚠️ No user ID yet, waiting...");
+        return;
+      }
 
       try {
-        const response = await fetch(
-          `http://localhost:3001/users/${user._id}/wishlist`
-        );
-        if (!response.ok) throw new Error("Failed to fetch wishlist");
+        // console.log("Fetching wishlist for user:", user._id);
+        const response = await fetch(`http://localhost:3001/users/${user._id}/wishlist`, {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
 
-        const data = await response.json();
+        const text = await response.text();
+        // console.log("🧾 Raw response text:", text);
 
-        // ✅ Ensure backend returns populated listings
-        dispatch(setWishList(data.wishList));
+        const data = JSON.parse(text);
+        // console.log("✅ Wishlist data parsed:", data);
+
+        dispatch(setWishList(data.wishList || []));
+// console.log("✅ Updated Redux wishlist:", data.wishList);
+
+
+        if (Array.isArray(data.wishList)) {
+          dispatch(setWishList(data.wishList));
+        }
       } catch (err) {
         console.error("Error fetching wishlist:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchWishlist();
-  }, [user?._id, dispatch]);
+  }, [user?._id, token, dispatch]);
+
+  if (loading) return <h2 style={{ textAlign: "center" }}>Loading your wishlist...</h2>;
+
+// console.log("🎯 wishList array:", wishList);
 
   return (
     <>
       <Navbar />
       <h1 className="title-list">Your Wish List</h1>
 
-      {wishList.length > 0 ? (
+      {Array.isArray(wishList) && wishList.length > 0 ? (
         <div className="list">
-          {wishList
-  .filter((listing) => listing && listing._id) // ✅ ignore null/ID-only
-  .map((listing) => (
-    <ListingCard key={listing._id} {...listing} />
-  ))}
+          {wishList.map((listing) => (
+            <ListingCard key={listing._id} {...listing} />
+          ))}
         </div>
       ) : (
         <h2 style={{ textAlign: "center", marginTop: "2rem" }}>
