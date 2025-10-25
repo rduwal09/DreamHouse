@@ -156,7 +156,7 @@ const CreateListing = () => {
             token,
           })
         );
-        toast.error("Listing created successfully!");
+        toast.success("Listing created successfully!");
         navigate("/");
       } else {
         const data = await response.json();

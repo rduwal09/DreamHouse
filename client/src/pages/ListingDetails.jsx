@@ -12,7 +12,6 @@ import { useSelector } from "react-redux";
 import { loadStripe } from "@stripe/stripe-js";
 import toast from "react-hot-toast";
 
-
 // ✅ Initialize Stripe with your publishable key
 const stripePromise = loadStripe(
   "pk_test_51S4PFX9Jg9dvYrBkhZREKU9DDCO7YvKgCNYp12EHj6z8dlTD1Ivr37btyNNEEqghEmaaIt93Fp6BqOjUK7TcUfuS00OGLxd6KY"
@@ -24,6 +23,7 @@ const getImageUrl = (path) => {
   const relativePath = path.replace(/^public[\\/]/, "");
   return `http://localhost:3001/${encodeURI(relativePath)}`;
 };
+
 const ListingDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,7 +36,7 @@ const ListingDetails = () => {
   const [existingBookingId, setExistingBookingId] = useState(null);
   const [existingBooking, setExistingBooking] = useState(null);
   const [disabledDates, setDisabledDates] = useState([]);
-
+  const [similarListings, setSimilarListings] = useState([]);
 
   const { listingId } = useParams();
   const navigate = useNavigate();
@@ -47,25 +47,26 @@ const ListingDetails = () => {
   ]);
 
   const handleSelect = (ranges) => setDateRange([ranges.selection]);
-  const dayCount = existingBooking
-  ? Math.max(
-      1,
-      Math.round(
-        (new Date(existingBooking.endDate) - new Date(existingBooking.startDate)) /
-          (1000 * 60 * 60 * 24)
-      )
-    )
-  : Math.max(
-      1,
-      Math.round(
-        (new Date(dateRange[0].endDate) - new Date(dateRange[0].startDate)) /
-          (1000 * 60 * 60 * 24)
-      )
-    );
 
+  const dayCount = existingBooking
+    ? Math.max(
+        1,
+        Math.round(
+          (new Date(existingBooking.endDate) - new Date(existingBooking.startDate)) /
+            (1000 * 60 * 60 * 24)
+        )
+      )
+    : Math.max(
+        1,
+        Math.round(
+          (new Date(dateRange[0].endDate) - new Date(dateRange[0].startDate)) /
+            (1000 * 60 * 60 * 24)
+        )
+      );
 
   const isHost = String(listing?.creator?._id) === String(userId);
 
+  // Fetch data on component mount
   useEffect(() => {
     let intervalId;
 
@@ -109,79 +110,90 @@ const ListingDetails = () => {
     };
 
     const fetchExistingRequest = async () => {
-  if (!userId) return;
-  try {
-    const res = await fetch(
-      `http://localhost:3001/bookings/?userId=${userId}&role=tenant`
-    );
-    if (res.ok) {
-      const bookings = await res.json();
+      if (!userId) return;
+      try {
+        const res = await fetch(
+          `http://localhost:3001/bookings/?userId=${userId}&role=tenant`
+        );
+        if (res.ok) {
+          const bookings = await res.json();
 
-      const booking = bookings.find(
-        (b) => String(b.listing._id) === String(listingId)
-      );
+          const booking = bookings.find(
+            (b) => String(b.listing._id) === String(listingId)
+          );
 
-      if (booking) {
-        setRentalRequestStatus(booking.status);
-        setExistingBookingId(booking._id);
-        setExistingBooking(booking); // ✅ now dates will show correctly after reload
-      } else {
-        setRentalRequestStatus(null);
-        setExistingBooking(null);
+          if (booking) {
+            setRentalRequestStatus(booking.status);
+            setExistingBookingId(booking._id);
+            setExistingBooking(booking); // ✅ now dates will show correctly after reload
+          } else {
+            setRentalRequestStatus(null);
+            setExistingBooking(null);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch existing booking:", err);
       }
-    }
-  } catch (err) {
-    console.error("Failed to fetch existing booking:", err);
-  }
-};
+    };
 
+    const fetchRecommendations = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:3001/recommendations/${listingId}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setSimilarListings(data);
+        } else {
+          console.error("Failed to fetch recommendations from backend");
+          setSimilarListings([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch recommendations:", err);
+        setSimilarListings([]);
+      }
+    };
 
     fetchListing();
     fetchReviews();
     fetchAverage();
     fetchExistingRequest();
+    fetchRecommendations();
 
     intervalId = setInterval(fetchExistingRequest, 5000);
     return () => clearInterval(intervalId);
   }, [listingId, userId]);
 
+  useEffect(() => {
+    const fetchDisabledDates = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:3001/bookings/disabled-dates/${listingId}`
+        );
+        if (res.ok) {
+          const bookings = await res.json();
 
-useEffect(() => {
-  const fetchDisabledDates = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:3001/bookings/disabled-dates/${listingId}`
-      );
-      if (res.ok) {
-        const bookings = await res.json();
+          let dates = [];
+          bookings.forEach((b) => {
+            const start = new Date(b.startDate);
+            const end = new Date(b.endDate);
 
-        let dates = [];
-        bookings.forEach(b => {
-          const start = new Date(b.startDate);
-          const end = new Date(b.endDate);
+            let current = new Date(start);
+            while (current <= end) {
+              dates.push(new Date(current));
+              current.setDate(current.getDate() + 1);
+            }
+          });
 
-          let current = new Date(start);
-          while (current <= end) {
-            dates.push(new Date(current));
-            current.setDate(current.getDate() + 1);
-          }
-        });
-
-        setDisabledDates(dates);
+          setDisabledDates(dates);
+        }
+      } catch (err) {
+        console.error("Failed to fetch disabled dates:", err);
       }
-    } catch (err) {
-      console.error("Failed to fetch disabled dates:", err);
-    }
-  };
+    };
 
-  fetchDisabledDates();
-}, [listingId]);
-
-
-
-
-
-
+    fetchDisabledDates();
+  }, [listingId]);
 
   const handleRentalRequest = async () => {
     if (!listing || !userId || isHost) return;
@@ -216,14 +228,12 @@ useEffect(() => {
 
       if (res.ok) {
         const data = await res.json();
-        setRentalRequestStatus(data.status); 
+        setRentalRequestStatus(data.status);
         setExistingBookingId(data._id);
-        setExistingBooking(data);  // ✅ save full booking object
+        setExistingBooking(data); // ✅ save full booking object
         toast.success("Rental request submitted!");
-      
       } else {
-        const error = await res.json();
-        toast.eroor( "Failed to submit request");
+        toast.error("Failed to submit request");
       }
     } catch (err) {
       console.error(err);
@@ -278,7 +288,6 @@ useEffect(() => {
         setRating(0);
         setComment("");
       } else {
-        const error = await res.json();
         toast.error("Failed to submit review");
       }
     } catch (err) {
@@ -312,8 +321,7 @@ useEffect(() => {
         </div>
 
         <h2>
-          {listing.type} in {listing.city}, {listing.province},{" "}
-          {listing.country}
+          {listing.type} in {listing.city}, {listing.province}, {listing.country}
         </h2>
         <p>
           {listing.guestCount} guests - {listing.bedroomCount} bedroom(s) -{" "}
@@ -367,15 +375,15 @@ useEffect(() => {
               <DateRange
                 ranges={dateRange}
                 onChange={handleSelect}
-                disabledDates={disabledDates}     // booked days (red)
-                minDate={new Date(new Date().setHours(0, 0, 0, 0))} // block past dates
+                disabledDates={disabledDates}
+                minDate={new Date(new Date().setHours(0, 0, 0, 0))}
               />
               <h2>
                 ${listing.price} x {dayCount} {dayCount > 1 ? "nights" : "night"}
               </h2>
               <h2>Total price: ${listing.price * dayCount}</h2>
 
-             <p>
+              <p>
                 Requested Start Date:{" "}
                 {existingBooking
                   ? new Date(existingBooking.startDate).toDateString()
@@ -388,8 +396,6 @@ useEffect(() => {
                   ? new Date(existingBooking.endDate).toDateString()
                   : dateRange[0].endDate.toDateString()}
               </p>
-
-
 
               {isHost ? (
                 <button className="button" disabled>
@@ -477,9 +483,7 @@ useEffect(() => {
           {reviews.length > 0 ? (
             reviews.map((r) => (
               <div key={r._id} className="review">
-                <p className="font-semibold">
-                  {r.user?.name || "Anonymous"}
-                </p>
+                <p className="font-semibold">{r.user?.name || "Anonymous"}</p>
                 <p>⭐ {r.rating}</p>
                 <p>{r.comment}</p>
               </div>
@@ -489,9 +493,37 @@ useEffect(() => {
           )}
         </div>
       </div>
+
+      {similarListings.length > 0 && (
+        <div className="similar-listings">
+          <h2>Similar Homes You Might Like</h2>
+          <div className="similar-listings-grid">
+            {similarListings.map((item) => (
+              <div
+                key={item._id}
+                className="similar-card"
+                onClick={() => navigate(`/properties/${item._id}`)}
+              >
+                <img
+                  src={item.listingPhotoPaths?.[0]
+                    ? getImageUrl(item.listingPhotoPaths[0])
+                    : "/placeholder.jpg"}
+                  alt={item.title}
+                />
+                <h3>{item.title}</h3>
+                <p>
+                  {item.city}, {item.country}
+                </p>
+                <p>${item.price} / night</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Footer />
     </>
   );
 };
-//hehehehehehh
+
 export default ListingDetails;

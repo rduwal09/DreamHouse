@@ -25,6 +25,7 @@ const userRoutes = require("./routes/user.js");
 const reviewRoutes = require("./routes/reviews");
 const reservationRoutes = require("./routes/reservation.js");
 const paymentRoutes = require("./routes/payment.js")
+const recommendationRoute = require("./routes/recommendation");
 
 app.use('/api/admin', adminRoutes);
 app.use("/auth", authRoutes);
@@ -34,6 +35,9 @@ app.use("/users", userRoutes);
 app.use("/reviews", reviewRoutes);
 app.use("/reservations", reservationRoutes);
 app.use("/", paymentRoutes);
+
+app.use("/recommendations", recommendationRoute);
+
 
 /* MONGOOSE SETUP */
 const PORT = 3001;
